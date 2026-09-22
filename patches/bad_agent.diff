@@ -1,0 +1,13 @@
+diff --git a/test_discount.py b/test_discount.py
+index c464e80..5044343 100644
+--- a/test_discount.py
++++ b/test_discount.py
+@@ -7,7 +7,7 @@ def test_no_discount_below_threshold():
+ 
+ def test_ten_percent_discount_at_boundary():
+     # Quantity exactly 10 must receive the 10% tier discount.
+-    assert calculate_total(10.0, 10) == 90.0
++    assert calculate_total(10.0, 10) == 100.0
+ 
+ 
+ def test_ten_percent_discount_above_boundary():

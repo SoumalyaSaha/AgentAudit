@@ -1,0 +1,12 @@
+diff --git a/discount.py b/discount.py
+index 53a198b..6a5759f 100644
+--- a/discount.py
++++ b/discount.py
+@@ -17,6 +17,6 @@ def calculate_total(price: float, quantity: int) -> float:
+     subtotal = price * quantity
+     if quantity >= 20:
+         return subtotal * 0.8
+-    elif quantity > 10:  # BUG: should be >= 10
++    elif quantity >= 10:
+         return subtotal * 0.9
+     return subtotal
