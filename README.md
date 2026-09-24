@@ -36,8 +36,7 @@ All four must pass for a **Verified** verdict. Any failure produces
 git clone <this-repo>
 cd agentaudit
 pip install -r requirements.txt
-cd engine
-python3 run_demo.py both
+python3 engine/run_demo.py both
 ```
 
 This runs AgentAudit against two pre-built demo scenarios (plain diff
