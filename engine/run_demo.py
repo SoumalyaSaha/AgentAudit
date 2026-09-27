@@ -6,6 +6,10 @@ Usage:
     python3 run_demo.py bad-agent-patch
     python3 run_demo.py good-agent-patch
     python3 run_demo.py both          # runs both scenarios in sequence
+    python3 run_demo.py both --backend sandbox   # same, on real Nebius
+                                                 # Sandboxes (needs
+                                                 # NEBIUS_API_KEY +
+                                                 # NEBIUS_PROJECT_ID)
 
 Scenario names map to plain diff files in ../patches/<scenario>.diff --
 see patches/README.md for how these are structured.
@@ -52,10 +56,14 @@ def get_ticket() -> str:
     return (DEMO_REPO / "TICKET.md").read_text()
 
 
-def run_scenario(scenario: str) -> None:
+def run_scenario(scenario: str, backend=None) -> None:
     print(f"\n>>> Running AgentAudit against scenario: {scenario}\n")
 
-    backend = LocalBackend(WORK_ROOT / scenario)
+    if backend is None:
+        backend = LocalBackend(WORK_ROOT / scenario)
+        owns_backend = True
+    else:
+        owns_backend = False
     base_cp = backend.create_checkpoint(DEMO_REPO)
     patch_text = get_diff(scenario)
     ticket = get_ticket()
@@ -79,14 +87,38 @@ def run_scenario(scenario: str) -> None:
     verdict = aggregate(scenario, [result_a, result_b, result_c, result_d])
     print(verdict.render())
 
-    backend.cleanup()
+    if owns_backend:
+        backend.cleanup()
 
 
 def main() -> None:
-    target = sys.argv[1] if len(sys.argv) > 1 else "both"
+    args = sys.argv[1:]
+    backend_name = "local"
+    if "--backend" in args:
+        i = args.index("--backend")
+        try:
+            backend_name = args[i + 1]
+        except IndexError:
+            print("usage: run_demo.py [scenario|both] [--backend local|sandbox]")
+            raise SystemExit(2)
+        del args[i:i + 2]
+    target = args[0] if args else "both"
     scenarios = ["bad-agent-patch", "good-agent-patch"] if target == "both" else [target]
-    for scenario in scenarios:
-        run_scenario(scenario)
+
+    backend = None
+    if backend_name == "sandbox":
+        from sandbox_backend import SandboxBackend
+        backend = SandboxBackend()
+    elif backend_name != "local":
+        print(f"unknown backend: {backend_name} (expected local|sandbox)")
+        raise SystemExit(2)
+
+    try:
+        for scenario in scenarios:
+            run_scenario(scenario, backend=backend)
+    finally:
+        if backend is not None:
+            backend.cleanup()
 
 
 if __name__ == "__main__":
