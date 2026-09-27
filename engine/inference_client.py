@@ -25,6 +25,12 @@ import os
 import fixtures
 
 LIVE_MODE = os.environ.get("AGENTAUDIT_LIVE_MODE", "false").lower() == "true"
+
+
+def _live_mode() -> bool:
+    # Read per call (not just at import) so `run_demo.py --live` can enable
+    # live mode for its own process without requiring a pre-exported env var.
+    return os.environ.get("AGENTAUDIT_LIVE_MODE", "false").lower() == "true"
 NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1"
 NEMOTRON_SUPER = "nvidia/nemotron-3-super-120b-a12b"
 NEMOTRON_NANO = "nvidia/nemotron-3-nano-8b"
@@ -57,7 +63,7 @@ def generate_blind_spot_tests(scenario: str, ticket: str, diff: str) -> list[dic
     Check C: ask Nemotron for new test cases targeting the ticket's stated
     behavior, independent of the existing suite's exact assertions.
     """
-    if not LIVE_MODE:
+    if not _live_mode():
         return fixtures.get_generated_tests(scenario)
 
     system = (
@@ -75,7 +81,7 @@ def compare_description_to_diff(scenario: str, ticket: str, diff: str) -> dict:
     """
     Check D: ask Nemotron whether the diff plausibly implements the ticket.
     """
-    if not LIVE_MODE:
+    if not _live_mode():
         return fixtures.get_description_diff_verdict(scenario)
 
     system = (

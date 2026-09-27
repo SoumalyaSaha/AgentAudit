@@ -10,6 +10,13 @@ Usage:
                                                  # Sandboxes (needs
                                                  # NEBIUS_API_KEY +
                                                  # NEBIUS_PROJECT_ID)
+    python3 run_demo.py both --live              # same, but Checks C and D
+                                                 # make real Nemotron calls
+                                                 # instead of replaying
+                                                 # fixtures (needs
+                                                 # NEBIUS_API_KEY; costs
+                                                 # credits -- only pass
+                                                 # this flag explicitly)
 
 Scenario names map to plain diff files in ../patches/<scenario>.diff --
 see patches/README.md for how these are structured.
@@ -99,9 +106,19 @@ def main() -> None:
         try:
             backend_name = args[i + 1]
         except IndexError:
-            print("usage: run_demo.py [scenario|both] [--backend local|sandbox]")
+            print("usage: run_demo.py [scenario|both] [--backend local|sandbox] [--live]")
             raise SystemExit(2)
         del args[i:i + 2]
+    live = False
+    if "--live" in args:
+        # Live Nemotron calls cost credits: only fires on this explicit
+        # flag, never from tests or verification scripts. Scoped to this
+        # process only (os.environ does not leak to the parent shell).
+        # inference_client re-reads the env per call, so no pre-export needed.
+        import os
+        os.environ["AGENTAUDIT_LIVE_MODE"] = "true"
+        live = True
+        args.remove("--live")
     target = args[0] if args else "both"
     scenarios = ["bad-agent-patch", "good-agent-patch"] if target == "both" else [target]
 
@@ -114,6 +131,9 @@ def main() -> None:
         raise SystemExit(2)
 
     try:
+        if live:
+            print(">>> LIVE MODE: Checks C and D will call Nemotron "
+                  "(costs credits) instead of replaying fixtures.\n")
         for scenario in scenarios:
             run_scenario(scenario, backend=backend)
     finally:
