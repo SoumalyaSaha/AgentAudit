@@ -16,8 +16,10 @@ because it removes a specific, real way this kind of demo goes wrong.
   The real Sandboxes backend still exists and is used for the live-mode
   evidence capture (see below) — the submission is not "fake," it's
   "recorded reliably, proven live separately."
-- **Total run time ~1-2 seconds.** There is no waiting, no risk of dead
-  air, no temptation to cut/edit mid-command.
+- **Total run time a few seconds, with no network waits.** Measured
+  ~4s per scenario (~8s for `both`) on Windows; faster on Linux.
+  There is no waiting on APIs, no risk of dead air, no temptation to
+  cut/edit mid-command.
 - **Deterministic verdicts, confirmed by direct testing**, not assumption:
   bad-agent-patch → FLAGGED on all 4 checks, good-agent-patch → VERIFIED
   on all 4 checks, reproduced identically across multiple runs and from

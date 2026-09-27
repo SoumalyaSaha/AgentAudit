@@ -82,13 +82,18 @@
 - Dispatches the 4 checks (A sequential/local, B/C/D as sandbox forks) and collects results.
 - Owns retry/backtrack logic: on ambiguous or errored sandbox operation, re-fork from the clean BASELINE checkpoint rather than retrying in place.
 
-### 3.2 Sandboxes Client (`clients/sandbox.py`)
-Thin wrapper over `contree-sdk`:
-- `create_checkpoint(repo_url, ref) -> checkpoint_id`
-- `fork(checkpoint_id) -> sandbox_id`
-- `run(sandbox_id, command) -> operation` (poll to terminal state)
-- `read_artifacts(sandbox_id, path)` — for JUnit XML / logs
-- Respects the documented 50-concurrent-operation cap: an in-process semaphore limits concurrent `run()` calls.
+### 3.2 Sandboxes Client (`engine/sandbox_backend.py`)
+
+Thin wrapper over `contree-sdk` (pinned against the inspected 0.3.6 API;
+not yet executed live -- see `scripts/smoke_sandbox.py`):
+- `create_checkpoint(source_dir) -> checkpoint_id` (uploads the local
+  tree, installs pytest, tags the state; tag is the checkpoint id)
+- `fork(checkpoint_id) -> sandbox_id` (`images.use(tag).session()`)
+- `run(sandbox_id, command) -> operation` (via `popen` + `communicate`)
+- `apply_patch` uses `patch -p1`, never `git apply` (silent no-op risk)
+- `read_file` via `session.read()`; no session terminate API exists in
+  the SDK, so `cleanup()` only drops local handles
+- `engine/local_backend.py` mirrors this interface exactly for offline runs
 
 ### 3.3 Token Factory Client (`clients/inference.py`)
 Thin wrapper over the Nebius-compatible chat completions endpoint:
@@ -99,7 +104,7 @@ Thin wrapper over the Nebius-compatible chat completions endpoint:
 ### 3.4 Check A: Test Tampering (static, no sandbox needed for the diff itself, but confirmed against sandboxed file reads)
 - Pull test file contents at `base_sha` and `head_sha`.
 - Structural diff on test files only (`unidiff` library).
-- Heuristic rules: deleted assert lines, `@skip`/`@xfail`/`.skip()` additions, assertion-strength downgrades (pattern list: `assertEqual`→`assertTrue/assertIsNotNone`, removed `pytest.raises`, widened numeric tolerances), reduced parametrize case counts.
+- Heuristic rules: deleted assert lines, whole-test deletion (`removed_test`), `@skip`/`@xfail`/`.skip()` additions (`skip_marker_added`, incl. decorators added over an existing `def`), comparison-operator swaps inside an existing assert (`modified_comparison`, e.g. `==`→`!=`), assertion-strength downgrades (pattern list: `assertEqual`→`assertTrue/assertIsNotNone`, removed `pytest.raises`, widened numeric tolerances), reduced parametrize case counts.
 - Output: pass/fail + exact line-level evidence.
 
 ### 3.5 Check B: Baseline Regression
@@ -150,8 +155,10 @@ CheckResult
 
 ## 5. Configuration & Secrets
 
-- `NEBIUS_API_KEY` — Token Factory inference
-- `NEBIUS_SANDBOX_TOKEN` + `NEBIUS_PROJECT` — Sandboxes/ConTree access
+- `NEBIUS_API_KEY` — Token Factory inference, and (same key) Sandboxes auth
+- `NEBIUS_PROJECT_ID` — Sandboxes/ConTree project (Sandboxes is a separate
+  product permission on the same Token Factory account; there is no
+  separate sandbox token)
 - `GITHUB_TOKEN` — read-only PAT (repo scope, no write needed) for fetching PR diffs/descriptions
 - `.env.example` committed; real `.env` gitignored
 - Config file (`agentaudit.config.json`) for model routing overrides per check, mirroring the pattern used by other Token-Factory-based hackathon projects (per-role model selection, thinking on/off)

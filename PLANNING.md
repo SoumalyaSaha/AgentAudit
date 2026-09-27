@@ -65,13 +65,13 @@ This demo is self-contained, requires no live third-party agent dependency (we c
 
 ## 7. Milestones
 
-| Milestone | Deliverable |
-|---|---|
-| M1 | Nebius Sandboxes + Token Factory (Nemotron) integration smoke-tested; baseline checkpoint + fork working end to end on demo repo |
-| M2 | Check #1 (test tampering) implemented and demoed on the scripted "bad agent" PR |
-| M3 | Check #4 (baseline regression) + Check #2 (generated blind-spot tests) implemented |
-| M4 | Check #3 (description-diff mismatch via Nemotron) implemented; verdict aggregation + evidence bundle UI |
-| M5 | Demo repo + scripted bad/good agent PRs finalized; dashboard polish; README + docs + license |
+| Milestone | Deliverable | Status (2026-09-27) |
+|---|---|---|
+| M1 | Nebius Sandboxes + Token Factory (Nemotron) integration smoke-tested; baseline checkpoint + fork working end to end on demo repo | Token Factory proven live (evidence committed); Sandboxes NOT yet live (403, no permission on this account) — backend rewritten against real contree-sdk 0.3.6 API, smoke script ready |
+| M2 | Check #1 (test tampering) implemented and demoed on the scripted "bad agent" PR | Done + hardened (removed_test, skip_marker_added, modified_comparison; 5/5 verify_check_a.py) |
+| M3 | Check #4 (baseline regression) + Check #2 (generated blind-spot tests) implemented | Implemented, fixture-verified; live-Sandbox run pending M1 access |
+| M4 | Check #3 (description-diff mismatch via Nemotron) implemented; verdict aggregation + evidence bundle UI | Check D wired + aggregated; `--live` flag added; dashboard UI skipped (deferred, needs JSON export first) |
+| M5 | Demo repo + scripted bad/good agent PRs finalized; dashboard polish; README + docs + license | In progress (this phase) |
 | M6 | Record ≤3 min demo video; submit |
 
 ## 8. Risks & Mitigations
