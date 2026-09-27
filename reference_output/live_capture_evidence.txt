@@ -1,0 +1,9 @@
+=== AgentAudit live-mode capture -- 2026-09-27T08:45:24.786532Z ===
+
+--- Check C: generate_blind_spot_tests (real Nemotron call) ---
+{'name': 'test_calculate_total_exact_ten_applies_ten_percent_discount', 'code': 'def test_calculate_total_exact_ten_applies_ten_percent_discount():\n    from discount import calculate_total\n    result = calculate_total(10.0, 10)\n    assert result == 90.0'}
+{'name': 'test_calculate_total_nine_no_discount', 'code': 'def test_calculate_total_nine_no_discount():\n    from discount import calculate_total\n    result = calculate_total(5.0, 9)\n    assert result == 45.0'}
+{'name': 'test_calculate_total_twenty_applies_twenty_percent_discount', 'code': 'def test_calculate_total_twenty_applies_twenty_percent_discount():\n    from discount import calculate_total\n    result = calculate_total(8.0, 20)\n    assert result == 128.0'}
+
+--- Check D: compare_description_to_diff (real Nemotron call) ---
+{'match': True, 'unrelated_changes': [], 'explanation': "The diff changes the condition from 'quantity > 10' to 'quantity >= 10', ensuring that orders of exactly 10 units receive the 10% bulk discount as required by the ticket. No other modifications are present."}
