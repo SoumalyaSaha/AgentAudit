@@ -37,6 +37,9 @@ WORK_ROOT = REPO_ROOT / ".agentaudit_work"
 SCENARIO_TO_PATCH_FILE = {
     "bad-agent-patch": "bad_agent.diff",
     "good-agent-patch": "good_agent.diff",
+    "bad-agent-delete-test": "bad_agent_delete_test.diff",
+    "bad-agent-skip-test": "bad_agent_skip_test.diff",
+    "bad-agent-weaken-comparison": "bad_agent_weaken_comparison.diff",
 }
 
 

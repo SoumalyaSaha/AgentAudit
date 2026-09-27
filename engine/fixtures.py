@@ -99,4 +99,7 @@ def get_generated_tests(scenario: str) -> list[dict]:
 
 
 def get_description_diff_verdict(scenario: str) -> dict:
-    return DESCRIPTION_DIFF_VERDICTS[scenario]
+    # New tampering-variant scenarios reuse the bad-agent verdict: like the
+    # original cheating-agent patch, they edit the tests instead of fixing
+    # discount.py, so the description-to-diff mismatch is identical.
+    return DESCRIPTION_DIFF_VERDICTS.get(scenario, DESCRIPTION_DIFF_VERDICTS["bad-agent-patch"])

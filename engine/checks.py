@@ -50,10 +50,21 @@ def check_a_test_tampering(backend: LocalBackend, base_cp_id: str, patch_text: s
             f"  line {f.line_no}: {f.kind} -- was: `{f.old_line}`  now: `{f.new_line}`"
             for f in findings
         ]
+        kinds = {f.kind for f in findings}
+        if kinds <= {"modified_assertion", "removed_assertion"}:
+            summary = (
+                f"{len(findings)} existing assertion(s) were modified or removed "
+                f"instead of the code being fixed."
+            )
+        else:
+            summary = (
+                f"{len(findings)} tampering signal(s) in existing tests "
+                f"({', '.join(sorted(kinds))}) instead of the code being fixed."
+            )
         return CheckResult(
             name="Test Tampering",
             passed=False,
-            summary=f"{len(findings)} existing assertion(s) were modified or removed instead of the code being fixed.",
+            summary=summary,
             evidence={"findings": lines},
         )
     return CheckResult(
