@@ -167,7 +167,7 @@ CheckResult
 
 ## 6. Build Order (maps to PLANNING.md milestones)
 
-1. `clients/sandbox.py` + `clients/inference.py` — smoke tests against real Nebius endpoints (M1)
+1. `engine/sandbox_backend.py` + `engine/inference_client.py` — smoke tests against real Nebius endpoints (M1)
 2. Demo repo with a deliberately-planted bug + two scripted patches (one tampering, one honest) (M1)
 3. Check A (pure diff logic, fastest to build, no model/sandbox dependency) (M2)
 4. Check B (sandbox fork + test run — proves the core branching mechanic end-to-end) (M3)
