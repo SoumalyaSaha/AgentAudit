@@ -9,14 +9,20 @@ Written against `contree-sdk` 0.3.6 (pip install contree-sdk), inspected
 offline via its installed source -- NOT yet verified against a live
 Sandboxes account.
 
-VERIFICATION STATUS (updated 2026-09-27): UNVERIFIED LIVE. Every call
-below matches a real method observed on the installed 0.3.6 classes, but
-no live account/credentials were available in this environment, so the
-end-to-end sequence (auth -> use image -> session -> tag/fork -> popen)
-has never been executed. Before depending on it:
-  1. export NEBIUS_API_KEY + NEBIUS_PROJECT_ID (Sandboxes-enabled account)
-  2. python scripts/smoke_sandbox.py   (echo hello through checkpoint/fork)
-  3. python engine/run_demo.py both --backend sandbox
+VERIFICATION STATUS (updated 2026-10-14): LIVE-VERIFIED against a
+Sandboxes-enabled account (all token permissions True). Smoke test passes
+(checkpoint/fork/echo ok); full `run_demo.py both --backend sandbox`
+passes with correct verdicts (bad-agent-patch FLAGGED on all 4 checks,
+good-agent-patch VERIFIED on all 4). Two SDK behaviors found live and
+coded around (see create_checkpoint/_finish docstrings):
+1. run() only prepares; .wait() executes and returns the post-execution
+   image -- the prepared handle must never be reused for reads/tags.
+2. popen()...communicate() consumes its originating handle (uuid resets
+   to None), so stateful steps use run().wait() exclusively; fork ids
+   are local unique keys since fresh handles start with uuid None.
+Observed latency: checkpoint ~8s, trivial run ~1.5s, full both-scenarios
+run ~66s vs ~8s local -- recording stays on LocalBackend per
+RECORDING_CHECKLIST.md (reliability), live Sandboxes as proven backup.
 
 It is NOT used for the recorded demo video itself -- see fixtures.py and
 RECORDING_CHECKLIST.md for why the recording uses LocalBackend instead.
@@ -73,7 +79,7 @@ class Checkpoint:
 
 @dataclass
 class Sandbox:
-    id: str  # str(session uuid)
+    id: str  # local unique key (fresh live handles start with uuid None)
     parent_checkpoint_id: str
 
 
@@ -106,27 +112,39 @@ class SandboxBackend:
         """Snapshot a local directory as a reusable tagged image.
 
         Mirrors LocalBackend.create_checkpoint(source_dir): uploads the
-        tree, installs pytest, tags the state. UNVERIFIED live.
+        tree, installs pytest, tags the state. LIVE-VERIFIED 2026-10-14.
+
+        Lifecycle note (learned live): `run()` only *prepares*; `.wait()`
+        executes and returns the post-execution image. `popen()...communicate()`
+        consumes the originating handle (its uuid resets to None), so this
+        backend never uses popen for stateful steps -- only run().wait(),
+        whose returned object is always stored back.
         """
         cp_id = f"agentaudit-cp-{uuid.uuid4().hex[:8]}"
-        image = self.client.images.use(BASE_IMAGE_REF)
-        session = image.session()
+        session = self.client.images.use(BASE_IMAGE_REF).session()
         session = session.apply_files(self._upload_map(source_dir))
-        setup = session.popen(
-            args=["sh", "-c", "pip install --quiet pytest"],
+        # Execute setup AND tag atomically: _await applies req.tag to the
+        # post-execution image, so no stale-handle tagging is possible.
+        session = session.run(
+            shell="pip install --quiet pytest",
             cwd=REPO_DIR,
-            text=True,
+            disposable=False,
             timeout=RUN_TIMEOUT_SECS,
-        )
-        setup.communicate()
-        session = session.tag_as(cp_id)
+            tag=cp_id,
+        ).wait()
         cp = Checkpoint(id=cp_id, _session=session)
         self._checkpoints[cp_id] = cp
         return cp
 
     def fork(self, checkpoint_id: str) -> Sandbox:
+        # Fresh use(tag).session() handles start with uuid None (resolved
+        # lazily on first execution), so the sandbox id is a local unique
+        # key -- never str(session.uuid), which would collide as "None"
+        # across multiple un-executed forks.
         session = self.client.images.use(checkpoint_id).session()
-        sb = Sandbox(id=str(session.uuid), parent_checkpoint_id=checkpoint_id)
+        sb = Sandbox(
+            id=f"sb-{uuid.uuid4().hex[:8]}", parent_checkpoint_id=checkpoint_id
+        )
         self._sandboxes[sb.id] = session
         self._records[sb.id] = sb
         return sb
@@ -148,26 +166,58 @@ class SandboxBackend:
         inside a subdirectory of an ambient git repo.
         """
         session = self._sandboxes[sandbox_id]
-        session = session.apply_files({f"{REPO_DIR}/_incoming.patch": patch_text})
+        session = session.apply_files(
+            {f"{REPO_DIR}/_incoming.patch": patch_text.encode("utf-8")}
+        )
         self._sandboxes[sandbox_id] = session
-        return self._popen(session, ["sh", "-c", "patch -p1 -i _incoming.patch"])
+        return self._exec(
+            sandbox_id, shell="patch -p1 -i _incoming.patch"
+        )
 
     def run(self, sandbox_id: str, command: list[str]) -> Operation:
         session = self._sandboxes[sandbox_id]
         # checks.py passes ["python3", ...]; the base image provides
-        # python3 (UNVERIFIED live: exact interpreter name on the image).
-        return self._popen(session, command)
-
-    def _popen(self, session, command: list[str]) -> Operation:
-        proc = session.popen(
-            args=command, cwd=REPO_DIR, text=True, timeout=RUN_TIMEOUT_SECS,
+        # python3 (LIVE-VERIFIED 2026-10-14: python:3.11 image runs it).
+        prepared = session.run(
+            command[0],
+            args=command[1:],
+            cwd=REPO_DIR,
+            disposable=False,
+            timeout=RUN_TIMEOUT_SECS,
         )
-        out = proc.communicate()
-        if isinstance(out, tuple) and len(out) == 2:
-            stdout, stderr = (str(part or "") for part in out)
-        else:  # UNVERIFIED: communicate() shape -- fall back to properties
-            stdout, stderr = str(proc.stdout or ""), str(proc.stderr or "")
-        return Operation(proc.returncode, stdout, stderr)
+        return self._finish(sandbox_id, prepared)
+
+    def write_file(self, sandbox_id: str, rel_path: str, content: str) -> None:
+        """Overwrite/create a file inside the sandbox (backend-agnostic
+        twin of LocalBackend.write_file, used by checks that inject or
+        restore test files without touching LocalBackend privates)."""
+        session = self._sandboxes[sandbox_id]
+        session = session.apply_files(
+            {f"{REPO_DIR}/{rel_path}": content.encode("utf-8")}
+        )
+        self._sandboxes[sandbox_id] = session
+
+    def _exec(self, sandbox_id: str, shell: str) -> Operation:
+        session = self._sandboxes[sandbox_id]
+        prepared = session.run(
+            shell=shell,
+            cwd=REPO_DIR,
+            disposable=False,
+            timeout=RUN_TIMEOUT_SECS,
+        )
+        return self._finish(sandbox_id, prepared)
+
+    def _finish(self, sandbox_id: str, prepared) -> Operation:
+        # wait() executes and returns the POST-execution image: store it
+        # back, since the pre-execution handle must not be reused.
+        executed = prepared.wait()
+        self._sandboxes[sandbox_id] = executed
+        stdout, stderr = executed.stdout, executed.stderr
+        if isinstance(stdout, (bytes, bytearray)):
+            stdout = bytes(stdout).decode("utf-8", errors="replace")
+        if isinstance(stderr, (bytes, bytearray)):
+            stderr = bytes(stderr).decode("utf-8", errors="replace")
+        return Operation(executed.exit_code, str(stdout or ""), str(stderr or ""))
 
     def read_file(self, sandbox_id: str, rel_path: str) -> str:
         session = self._sandboxes[sandbox_id]

@@ -95,7 +95,7 @@ def check_b_baseline_regression(backend: LocalBackend, base_cp_id: str, patch_te
 
     # Critical step: overwrite with the ORIGINAL pristine test file, so a
     # patch that tampered with the tests can't hide behind its own edits.
-    (sandbox.path / TEST_FILE).write_text(original_test_content)
+    backend.write_file(sandbox.id, TEST_FILE, original_test_content)
 
     run_op = backend.run(sandbox.id, ["python3", "-m", "pytest", "-q"])
     return CheckResult(
@@ -169,9 +169,8 @@ def check_c_blind_spot_tests(
 
 
 def _inject_test(backend: LocalBackend, sandbox_id: str, test: dict) -> None:
-    sb_path = backend._sandboxes[sandbox_id].path  # local helper access, fine within this module
-    existing = (sb_path / TEST_FILE).read_text()
-    (sb_path / TEST_FILE).write_text(existing + "\n\n" + test["code"])
+    existing = backend.read_file(sandbox_id, TEST_FILE)
+    backend.write_file(sandbox_id, TEST_FILE, existing + "\n\n" + test["code"])
 
 
 # ---------------------------------------------------------------------------

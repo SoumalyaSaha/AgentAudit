@@ -143,6 +143,12 @@ class LocalBackend:
         sb = self._sandboxes[sandbox_id]
         return (sb.path / rel_path).read_text()
 
+    def write_file(self, sandbox_id: str, rel_path: str, content: str) -> None:
+        """Overwrite/create a file inside a sandbox (used by checks that
+        inject or restore test files; keeps checks backend-agnostic)."""
+        sb = self._sandboxes[sandbox_id]
+        (sb.path / rel_path).write_text(content)
+
     # ---- cleanup ----------------------------------------------------------
 
     def cleanup(self) -> None:
