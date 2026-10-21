@@ -1,5 +1,18 @@
-.agentaudit_work/
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Build output
+dashboard/dist/
+dashboard/scripts/.render_smoke.*
+
+# Secrets (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.pyc
 .pytest_cache/
-.env
+.agentaudit_work/

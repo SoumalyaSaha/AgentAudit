@@ -28,10 +28,15 @@ DEMO_SCRIPT.md for the exact narration to pair with this output.
 
 from __future__ import annotations
 
+import datetime
 import sys
+import time
 from pathlib import Path
 
-from aggregator import aggregate
+import history
+import inference_client
+import scenarios as scenario_catalog
+from aggregator import Verdict, aggregate
 from checks import (
     check_a_test_tampering,
     check_b_baseline_regression,
@@ -63,7 +68,8 @@ def get_ticket() -> str:
     return (DEMO_REPO / "TICKET.md").read_text()
 
 
-def run_scenario(scenario: str, backend=None) -> None:
+def run_scenario(scenario: str, backend=None, backend_name: str = "local",
+                 record_history: bool = True) -> Verdict:
     print(f"\n>>> Running AgentAudit against scenario: {scenario}\n")
 
     if backend is None:
@@ -75,27 +81,51 @@ def run_scenario(scenario: str, backend=None) -> None:
     patch_text = get_diff(scenario)
     ticket = get_ticket()
 
+    # Per-check timings. These are dashboard metadata only -- nothing
+    # here is printed, so the terminal output stays byte-identical.
+    t_run = time.perf_counter()
+
     print("[1/4] Check A -- Test Tampering ...")
+    t0 = time.perf_counter()
     result_a = check_a_test_tampering(backend, base_cp.id, patch_text)
+    result_a.duration_ms = (time.perf_counter() - t0) * 1000
     print(f"      -> {'PASS' if result_a.passed else 'FAIL'}: {result_a.summary}")
 
     print("[2/4] Check B -- Baseline Regression (original suite vs patched code) ...")
+    t0 = time.perf_counter()
     result_b = check_b_baseline_regression(backend, base_cp.id, patch_text)
+    result_b.duration_ms = (time.perf_counter() - t0) * 1000
     print(f"      -> {'PASS' if result_b.passed else 'FAIL'}: {result_b.summary}")
 
     print("[3/4] Check C -- Blind-Spot Coverage (Nemotron-generated tests) ...")
+    t0 = time.perf_counter()
     result_c = check_c_blind_spot_tests(backend, base_cp.id, patch_text, scenario, ticket)
+    result_c.duration_ms = (time.perf_counter() - t0) * 1000
     print(f"      -> {'PASS' if result_c.passed else 'FAIL'}: {result_c.summary}")
 
     print("[4/4] Check D -- Description-to-Diff Match (Nemotron) ...")
+    t0 = time.perf_counter()
     result_d = check_d_description_match(scenario, ticket, patch_text)
+    result_d.duration_ms = (time.perf_counter() - t0) * 1000
     print(f"      -> {'PASS' if result_d.passed else 'FAIL'}: {result_d.summary}")
 
     verdict = aggregate(scenario, [result_a, result_b, result_c, result_d])
+    verdict.timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat(
+        timespec="seconds").replace("+00:00", "Z")
+    verdict.backend = backend_name
+    verdict.nemotron_mode = "live" if inference_client._live_mode() else "fixture"
+    verdict.duration_ms = (time.perf_counter() - t_run) * 1000
+    verdict.diff_text = patch_text
+    verdict.ticket_text = ticket
+    verdict.run_id = history.new_run_id()
     print(verdict.render())
+
+    if record_history:
+        history.append_run(verdict.to_dict())
 
     if owns_backend:
         backend.cleanup()
+    return verdict
 
 
 def main() -> None:
@@ -106,7 +136,7 @@ def main() -> None:
         try:
             backend_name = args[i + 1]
         except IndexError:
-            print("usage: run_demo.py [scenario|both] [--backend local|sandbox] [--live]")
+            print("usage: run_demo.py [scenario|both|all] [--backend local|sandbox] [--live]")
             raise SystemExit(2)
         del args[i:i + 2]
     live = False
@@ -119,8 +149,18 @@ def main() -> None:
         os.environ["AGENTAUDIT_LIVE_MODE"] = "true"
         live = True
         args.remove("--live")
+    record_history = True
+    if "--no-history" in args:
+        # Opt out of appending to dashboard/data/run_history.json.
+        record_history = False
+        args.remove("--no-history")
     target = args[0] if args else "both"
-    scenarios = ["bad-agent-patch", "good-agent-patch"] if target == "both" else [target]
+    if target == "both":
+        scenarios = list(scenario_catalog.DEMO_SCENARIOS)
+    elif target == "all":
+        scenarios = list(scenario_catalog.ALL_SCENARIOS)
+    else:
+        scenarios = [target]
 
     backend = None
     if backend_name == "sandbox":
@@ -130,12 +170,24 @@ def main() -> None:
         print(f"unknown backend: {backend_name} (expected local|sandbox)")
         raise SystemExit(2)
 
+    history.write_engine_info({
+        "backends": {
+            "local": "LocalBackend (filesystem snapshot, offline, deterministic)",
+            "sandbox": "Nebius Sandboxes / ConTree (live, real API calls)",
+        },
+        "nemotron_modes": {
+            "fixture": "Recorded Nemotron responses replayed offline (deterministic)",
+            "live": "Live Nemotron inference via Nebius Token Factory",
+        },
+    })
+
     try:
         if live:
             print(">>> LIVE MODE: Checks C and D will call Nemotron "
                   "(costs credits) instead of replaying fixtures.\n")
         for scenario in scenarios:
-            run_scenario(scenario, backend=backend)
+            run_scenario(scenario, backend=backend, backend_name=backend_name,
+                         record_history=record_history)
     finally:
         if backend is not None:
             backend.cleanup()

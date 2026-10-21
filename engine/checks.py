@@ -6,6 +6,7 @@ same interface) is a one-line change in run_demo.py / the orchestrator.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -22,6 +23,44 @@ class CheckResult:
     passed: bool
     summary: str
     evidence: dict = field(default_factory=dict)
+    # Dashboard-only metadata. Deliberately NOT part of `evidence`, so the
+    # terminal rendering (and the golden reference output) stays byte
+    # identical while the JSON export can carry timings and counts.
+    duration_ms: float = 0.0
+    counts: dict = field(default_factory=dict)
+
+
+def parse_pytest_counts(output: str) -> dict:
+    """Extract passed/failed/total counts from pytest output.
+
+    Prefers the trailing summary line ("3 passed, 1 failed in 0.42s");
+    falls back to counting the -q progress characters when the summary is
+    missing (e.g. output truncated by the aggregator).
+    """
+    out = output or ""
+    passed = failed = errors = 0
+    m = re.search(r"(\d+)\s+passed", out)
+    if m:
+        passed = int(m.group(1))
+    m = re.search(r"(\d+)\s+failed", out)
+    if m:
+        failed = int(m.group(1))
+    m = re.search(r"(\d+)\s+error", out)
+    if m:
+        errors = int(m.group(1))
+    if not (passed or failed or errors):
+        # Fallback: the -q progress line, e.g. ".F..  [100%]"
+        for line in out.splitlines():
+            line = line.strip()
+            if line.endswith("[100%]"):
+                head = line.split("[100%]")[0].strip()
+                if head and set(head) <= set(".FsxXER"):
+                    failed += head.count("F")
+                    errors += head.count("E")
+                    passed += head.count(".") + head.count("s")
+                    break
+    total = passed + failed + errors
+    return {"passed": passed, "failed": failed, "errors": errors, "total": total}
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +146,7 @@ def check_b_baseline_regression(backend: LocalBackend, base_cp_id: str, patch_te
             "Original test suite FAILS against the patched code -- the underlying bug is still present."
         ),
         evidence={"pytest_output": run_op.stdout.strip()},
+        counts=parse_pytest_counts(run_op.stdout),
     )
 
 
@@ -153,6 +193,10 @@ def check_c_blind_spot_tests(
     names = " ".join(f"test_discount.py::{t['name']}" for t in survivors)
     run_op = backend.run(patched_sandbox.id, ["python3", "-m", "pytest", "-q", *names.split()])
 
+    counts = parse_pytest_counts(run_op.stdout)
+    counts["generated_total"] = len(survivors)
+    counts["generated_passed"] = len(survivors) if run_op.ok else counts.get("passed", 0)
+
     return CheckResult(
         name="Blind-Spot Coverage",
         passed=run_op.ok,
@@ -165,6 +209,7 @@ def check_c_blind_spot_tests(
             "generated_tests": [t["code"] for t in survivors],
             "pytest_output": run_op.stdout.strip(),
         },
+        counts=counts,
     )
 
 

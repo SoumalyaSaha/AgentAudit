@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #0b0f17;
+  --color-panel: #0f172a;
+  --color-surface: #111827;
+  --color-surface-2: #1e293b;
+  --color-edge: #1e293b;
+  --color-edge-strong: #334155;
+  --color-ink: #f8fafc;
+  --color-ink-dim: #94a3b8;
+  --color-ink-faint: #64748b;
+  --color-verified: #10b981;
+  --color-verified-soft: #34d399;
+  --color-flagged: #ef4444;
+  --color-flagged-soft: #f87171;
+  --color-pending: #f59e0b;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mono labels / metrics: uppercase, wide tracking, tabular figures. */
+.metric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.micro-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

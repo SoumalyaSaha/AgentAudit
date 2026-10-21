@@ -103,6 +103,29 @@ A captured live transcript is at
 [`reference_output/live_capture_evidence.txt`](reference_output/live_capture_evidence.txt)
 (generated once ahead of the demo recording; see `RECORDING_CHECKLIST.md`).
 
+## Dashboard (Vite + React + Tailwind)
+
+A local front end for the recorded runs — Run History, Run Detail,
+Agent Health, and a local "New Audit" runner:
+
+```bash
+cd dashboard
+npm install
+npm run dev            # http://127.0.0.1:5173
+```
+
+Every value it renders is computed from `dashboard/data/run_history.json`
+(written by the engine as runs execute) and `dashboard/data/engine_info.json`
+(the engine's own constants: model names, scenario catalog) — no mockup
+literals are hardcoded anywhere. The New Audit page additionally needs
+the local-only runner:
+
+```bash
+python scripts/audit_server.py     # http://127.0.0.1:8765 (127.0.0.1 only)
+```
+
+See [`dashboard/README.md`](dashboard/README.md) for details.
+
 ## Repository layout
 
 ```
@@ -130,7 +153,14 @@ scripts/
                      (and the honest patch passes it)
   smoke_sandbox.py   Minimal live-Sandboxes smoke test (needs credentials;
                      not yet run green -- no Sandboxes access on this account)
-reference_output/    Golden expected output + live-mode capture evidence
+reference_output/    Golden expected output + live-mode capture evidence +
+                     live Sandboxes run evidence
+dashboard/            Vite + React + Tailwind front end (run history,
+                     run detail, agent health, new audit)
+  src/                Pages + pure analytics module (src/analytics.js)
+  data/               Generated run history + engine constants (from Python)
+  scripts/            verify_analytics.mjs (matrix/breakdown agreement),
+                     render_smoke.jsx (renders all 4 pages)
 PLANNING.md          Product plan
 TRD.md               Technical architecture
 DEMO_SCRIPT.md        Shot-by-shot recording script
