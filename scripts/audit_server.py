@@ -148,6 +148,23 @@ def run_audit(scenario: str, diff_text: str | None, ticket_text: str | None):
             shutil.rmtree(work_root, ignore_errors=True)
 
 
+class QuietServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer that ignores client-disconnect noise.
+
+    Browsers and HTTP clients routinely drop connections mid-request
+    (Vite's HMR probes, a page reload, a client cancelling a stream).
+    The default handler prints a full traceback for each one, which
+    buries the actual output in a local dev tool. Real errors still
+    surface.
+    """
+
+    def handle_error(self, request, client_address):
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
+            return
+        super().handle_error(request, client_address)
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -238,7 +255,7 @@ def main() -> None:
     if args.host not in ("127.0.0.1", "localhost"):
         raise SystemExit("refusing to bind anywhere but 127.0.0.1")
     history.write_engine_info()
-    srv = ThreadingHTTPServer((args.host, args.port), Handler)
+    srv = QuietServer((args.host, args.port), Handler)
     print(f"AgentAudit local audit runner on http://{args.host}:{args.port}  (local only)")
     try:
         srv.serve_forever()
