@@ -170,16 +170,7 @@ def main() -> None:
         print(f"unknown backend: {backend_name} (expected local|sandbox)")
         raise SystemExit(2)
 
-    history.write_engine_info({
-        "backends": {
-            "local": "LocalBackend (filesystem snapshot, offline, deterministic)",
-            "sandbox": "Nebius Sandboxes / ConTree (live, real API calls)",
-        },
-        "nemotron_modes": {
-            "fixture": "Recorded Nemotron responses replayed offline (deterministic)",
-            "live": "Live Nemotron inference via Nebius Token Factory",
-        },
-    })
+    history.write_engine_info()
 
     try:
         if live:

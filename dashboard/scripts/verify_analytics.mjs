@@ -96,10 +96,10 @@ if (stats.clean !== cleanManual || stats.flagged !== flaggedManual) {
 // ---- 4: findings catalog only lists observed kinds ----
 const catalog = findingsCatalog(runs)
 console.log('\nFindings catalog (from real Check A evidence):')
-for (const f of catalog) console.log(`  ${f.kind.padEnd(24)} caught ${f.count}x in ${f.scenarios.join(', ')}`)
+for (const f of catalog) console.log(`  ${f.kind.padEnd(24)} caught ${f.count}x across ${f.runCount} run(s) in ${f.scenarioList.join(', ')}`)
 const observedKinds = new Set(catalog.map((f) => f.kind))
 for (const f of catalog) {
-  if (!f.count || !f.scenarios.length) fail(`catalog entry ${f.kind} has no real observations`)
+  if (!f.count || !f.scenarioList.length) fail(`catalog entry ${f.kind} has no real observations`)
 }
 if (observedKinds.size === 0) fail('no tamper kinds observed at all')
 else pass(`${observedKinds.size} tamper kinds observed, all backed by real findings`)

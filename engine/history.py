@@ -82,6 +82,18 @@ def write_engine_info(extra: dict | None = None) -> Path:
             for name, meta in scenarios.SCENARIOS.items()
         },
         "demo_scenarios": scenarios.DEMO_SCENARIOS,
+        # Static descriptive data lives here (not in the callers) so every
+        # process that rewrites this file -- run_demo.py or audit_server.py
+        # -- produces the identical shape. Whoever writes last must not
+        # silently drop fields the other one added.
+        "backends": {
+            "local": "LocalBackend (filesystem snapshot, offline, deterministic)",
+            "sandbox": "Nebius Sandboxes / ConTree (live, real API calls)",
+        },
+        "nemotron_modes": {
+            "fixture": "Recorded Nemotron responses replayed offline (deterministic)",
+            "live": "Live Nemotron inference via Nebius Token Factory",
+        },
     }
     if extra:
         info.update(extra)

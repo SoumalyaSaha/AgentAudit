@@ -61,22 +61,7 @@ export function checkOf(run, key) {
   return (run.checks || []).find((c) => c.key === key) || null
 }
 
-/** Tamper kinds actually observed across all runs, counted from evidence. */
-export function findingsCatalog(runs = RUNS) {
-  const catalog = new Map()
-  for (const run of runs) {
-    const tamper = checkOf(run, 'T')
-    if (!tamper) continue
-    for (const line of tamper.evidence?.findings || []) {
-      // findings look like: "  line 10: modified_assertion -- was: `...`  now: `...`"
-      const m = line.match(/:\s*([a-z_]+)\s+--\s+was:/)
-      if (!m) continue
-      const kind = m[1]
-      const entry = catalog.get(kind) || { kind, count: 0, runs: new Set(), example: line.trim() }
-      entry.count += 1
-      entry.runs.add(run.scenario)
-      catalog.set(kind, entry)
-    }
-  }
-  return [...catalog.values()].sort((a, b) => b.count - a.count)
-}
+// The findings catalog lives in ./analytics.js so the exact same code
+// runs in the browser AND in scripts/verify_analytics.mjs. Re-exported
+// here for convenience; there is deliberately only ONE implementation.
+export { findingsCatalog } from './analytics'
