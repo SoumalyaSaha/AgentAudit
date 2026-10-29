@@ -2,7 +2,7 @@
   <img src="dashboard/public/logo.png" alt="AgentAudit" width="220" />
 </p>
 
-# AgentAudit
+                        # AgentAudit
 
 **The trust layer for AI coding agents.** Every autofix agent can tell
 you its tests are green. AgentAudit tells you whether that's actually
