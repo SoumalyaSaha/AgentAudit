@@ -131,7 +131,7 @@ export default function Layout({ page, setPage, children }) {
               <button
                 key={item.key}
                 onClick={() => setPage(item.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-sm transition-colors ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-sm transition-colors focus-ring ${
                   page === item.key
                     ? 'bg-surface-2 text-ink border border-edge-strong'
                     : 'text-ink-dim hover:text-ink hover:bg-surface'

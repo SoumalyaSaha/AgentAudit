@@ -79,7 +79,7 @@ export default function NewAudit({ setPage, openRun }) {
       </header>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <section className="border border-edge bg-surface rounded-md">
+        <section className="border border-edge bg-surface rounded-lg">
           <header className="px-4 py-2.5 border-b border-edge bg-panel/60 flex items-center gap-2">
             <button
               onClick={() => setMode('scenario')}
@@ -110,7 +110,7 @@ export default function NewAudit({ setPage, openRun }) {
                 <select
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
-                  className="w-full metric text-sm bg-panel border border-edge rounded px-3 py-2 text-ink"
+                  className="w-full metric text-sm bg-canvas border border-edge rounded px-3 py-2 text-ink outline-none focus:border-edge-strong"
                 >
                   {Object.entries(SCENARIOS).map(([name, meta]) => (
                     <option key={name} value={name}>
@@ -132,7 +132,7 @@ export default function NewAudit({ setPage, openRun }) {
                   onChange={(e) => setDiff(e.target.value)}
                   rows={10}
                   placeholder={'--- a/discount.py\n+++ b/discount.py\n@@ -17,6 +17,6 @@ ...'}
-                  className="w-full metric text-[11px] bg-canvas border border-edge rounded px-3 py-2 text-ink-dim placeholder:text-ink-faint outline-none focus:border-edge-strong"
+                  className="w-full metric text-[11px] bg-canvas border border-edge rounded px-3 py-2 text-ink placeholder:text-ink-faint outline-none focus:border-edge-strong"
                 />
                 <label className="micro-label text-ink-faint block">Ticket (optional)</label>
                 <textarea
@@ -140,7 +140,7 @@ export default function NewAudit({ setPage, openRun }) {
                   onChange={(e) => setTicket(e.target.value)}
                   rows={3}
                   placeholder="Paste a ticket description..."
-                  className="w-full metric text-[11px] bg-canvas border border-edge rounded px-3 py-2 text-ink-dim placeholder:text-ink-faint outline-none focus:border-edge-strong"
+                  className="w-full metric text-[11px] bg-canvas border border-edge rounded px-3 py-2 text-ink placeholder:text-ink-faint outline-none focus:border-edge-strong"
                 />
               </>
             )}
@@ -148,7 +148,7 @@ export default function NewAudit({ setPage, openRun }) {
             <button
               onClick={start}
               disabled={running || (mode === 'paste' && !diff.trim())}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded border border-verified/40 bg-verified/10 text-verified-soft text-sm hover:bg-verified/20 disabled:opacity-40 disabled:hover:bg-verified/10 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded bg-verified text-canvas text-sm font-semibold hover:bg-verified-soft active:translate-y-px disabled:opacity-40 disabled:hover:bg-verified transition-colors focus-ring"
             >
               <Icon name={running ? 'stop' : 'play'} />
               {running ? 'Running…' : 'Run Audit'}
@@ -156,7 +156,7 @@ export default function NewAudit({ setPage, openRun }) {
           </div>
         </section>
 
-        <section className="border border-edge bg-surface rounded-md">
+        <section className="border border-edge bg-surface rounded-lg">
           <header className="px-4 py-2.5 border-b border-edge bg-panel/60 flex items-center gap-2">
             <Icon name="monitoring" className="text-ink-faint" />
             <h2 className="text-sm font-medium">Verification Pipeline State</h2>

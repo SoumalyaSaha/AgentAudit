@@ -12,9 +12,12 @@
   --color-ink-faint: #64748b;
   --color-verified: #10b981;
   --color-verified-soft: #34d399;
+  --color-verified-deep: #059669;
   --color-flagged: #ef4444;
   --color-flagged-soft: #f87171;
+  --color-flagged-deep: #dc2626;
   --color-pending: #f59e0b;
+  --color-edge-bright: #475569;
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -45,6 +48,33 @@ body {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* Functional radiance — per the Obsidian Verifier elevation spec these denote
+   state changes and are never decorative. */
+.glow-verified {
+  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.25);
+}
+.glow-flagged {
+  box-shadow: 0 0 16px -2px rgba(239, 68, 68, 0.35);
+}
+
+/* Pulsating crimson indicator — accompanies a tamper-detected pill. */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot { animation: none; }
+}
+
+/* Keyboard focus rings: 2px canvas-colored inner ring + 4px border-default outer. */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--color-edge-strong);
 }
 
 ::-webkit-scrollbar {

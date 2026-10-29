@@ -4,7 +4,7 @@ import { fmtDuration } from '../data'
 
 export function Panel({ title, subtitle, right, children, className = '', icon }) {
   return (
-    <section className={`border border-edge bg-surface rounded-md overflow-hidden ${className}`}>
+    <section className={`border border-edge bg-surface rounded-lg overflow-hidden ${className}`}>
       {(title || right) && (
         <header className="flex items-center gap-3 px-4 py-2.5 border-b border-edge bg-panel/60">
           {icon && <Icon name={icon} className="text-ink-faint" />}
@@ -36,7 +36,7 @@ export function StatCard({ icon, label, value, sub, tone = 'default', valueClass
     pending: 'text-pending',
   }[tone]
   return (
-    <div className={`border ${toneRing} bg-surface rounded-md px-4 py-3`}>
+    <div className={`border ${toneRing} bg-surface rounded-lg px-4 py-3`}>
       <div className="flex items-center gap-2 micro-label text-ink-faint">
         {icon && <Icon name={icon} className={iconTone} />}
         <span className="truncate">{label}</span>
@@ -54,11 +54,13 @@ export function VerdictBadge({ verdict, size = 'sm' }) {
     <span
       className={`inline-flex items-center gap-1.5 rounded border ${pad} font-mono font-semibold tracking-wider ${
         verified
-          ? 'bg-verified/15 border-verified/40 text-verified-soft'
-          : 'bg-flagged/15 border-flagged/40 text-flagged-soft'
+          ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft glow-verified'
+          : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft glow-flagged'
       }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${verified ? 'bg-verified' : 'bg-flagged'}`} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${verified ? 'bg-verified' : 'bg-flagged pulse-dot'}`}
+      />
       {verdict}
     </span>
   )
@@ -72,8 +74,8 @@ export function CheckStrip({ checks, compact = false }) {
           key={c.key}
           className={`metric text-[10px] px-1.5 py-0.5 rounded border ${
             c.passed
-              ? 'bg-verified/10 border-verified/30 text-verified-soft'
-              : 'bg-flagged/10 border-flagged/30 text-flagged-soft'
+              ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft'
+              : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft'
           }`}
           title={`${c.name}: ${c.passed ? 'PASS' : 'FAIL'}`}
         >
@@ -118,7 +120,7 @@ export function Collapsible({ label, children, defaultOpen = false, right }) {
     <div className="border border-edge rounded bg-canvas/60">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface transition-colors focus-ring"
       >
         <Icon name={open ? 'collapse' : 'expand'} className="text-ink-faint" />
         <span className="micro-label text-ink-dim">{label}</span>
@@ -129,12 +131,28 @@ export function Collapsible({ label, children, defaultOpen = false, right }) {
   )
 }
 
-export function CodeBlock({ text, className = '' }) {
+export function CodeBlock({ text, diff = false, className = '' }) {
+  const base = `metric text-[11px] leading-[1.55] whitespace-pre-wrap break-words bg-surface-2 border border-edge rounded p-3 text-ink-dim ${className}`
+  if (!diff) {
+    return <pre className={base}>{text || '—'}</pre>
+  }
+  // Diff & Code Matrix: added lines tint emerald, removed lines tint crimson.
   return (
-    <pre
-      className={`metric text-[11px] leading-[1.55] whitespace-pre-wrap break-words bg-canvas border border-edge rounded p-3 text-ink-dim ${className}`}
-    >
-      {text || '—'}
+    <pre className={base}>
+      {(text || '').split('\n').map((line, i) => {
+        const isAdd = line.startsWith('+') && !line.startsWith('+++')
+        const isDel = line.startsWith('-') && !line.startsWith('---')
+        const tone = isAdd
+          ? 'bg-[rgba(6,78,59,0.15)] text-verified-soft'
+          : isDel
+            ? 'bg-[rgba(127,29,29,0.20)] text-flagged-soft'
+            : ''
+        return (
+          <div key={i} className={tone}>
+            {line || ' '}
+          </div>
+        )
+      })}
     </pre>
   )
 }

@@ -19,8 +19,10 @@ function CheckCard({ run, check }) {
 
   return (
     <div
-      className={`border rounded-md overflow-hidden ${
-        passed ? 'border-verified/30 bg-surface' : 'border-flagged/35 bg-surface'
+      className={`border rounded-lg overflow-hidden ${
+        passed
+          ? 'border-verified/30 bg-surface'
+          : 'border-flagged/35 bg-surface glow-flagged'
       }`}
     >
       <button
@@ -35,8 +37,8 @@ function CheckCard({ run, check }) {
           <span
             className={`metric text-[10px] px-2 py-0.5 rounded border ${
               passed
-                ? 'bg-verified/15 border-verified/40 text-verified-soft'
-                : 'bg-flagged/15 border-flagged/40 text-flagged-soft'
+                ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft'
+                : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft'
             }`}
           >
             {passed ? 'PASSED' : 'FAILED CHECK'}
@@ -147,7 +149,7 @@ function DiffPanel({ run }) {
           ))}
           {files.length === 0 && <span className="text-xs text-ink-faint">none</span>}
         </div>
-        <CodeBlock text={diff} />
+        <CodeBlock text={diff} diff />
       </div>
     </Collapsible>
   )
@@ -179,8 +181,8 @@ export default function RunDetail({ run, setPage }) {
     : `VERIFIED: all ${passedCount} checks passed`
 
   const bannerTone = failed.length
-    ? 'border-flagged/40 bg-flagged/10'
-    : 'border-verified/40 bg-verified/10'
+    ? 'border-flagged/40 bg-[rgba(127,29,29,0.20)] glow-flagged'
+    : 'border-verified/40 bg-[rgba(6,78,59,0.20)] glow-verified'
   const bannerText = failed.length ? 'text-flagged-soft' : 'text-verified-soft'
 
   return (
@@ -194,7 +196,7 @@ export default function RunDetail({ run, setPage }) {
         <span className="metric text-ink">{run.scenario}</span>
       </nav>
 
-      <div className={`border ${bannerTone} rounded-md px-5 py-4`}>
+      <div className={`border ${bannerTone} rounded-lg px-5 py-4`}>
         <div className="flex items-center gap-3 flex-wrap">
           <VerdictBadge verdict={run.verdict} size="lg" />
           <span className={`text-lg font-medium ${bannerText}`}>{headline}</span>
@@ -279,7 +281,7 @@ function Statish({ icon, label, value, tone }) {
   const color = tone === 'verified' ? 'text-verified-soft' : 'text-flagged-soft'
   const iconColor = tone === 'verified' ? 'text-verified' : 'text-flagged'
   return (
-    <div className="border border-edge bg-surface rounded-md px-4 py-3">
+    <div className="border border-edge bg-surface rounded-lg px-4 py-3">
       <div className="flex items-center gap-2 micro-label text-ink-faint">
         <Icon name={icon} className={iconColor} />
         <span>{label}</span>

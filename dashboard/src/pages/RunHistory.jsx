@@ -47,7 +47,7 @@ export default function RunHistory({ setPage, openRun }) {
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => setPage('new')}
-            className="flex items-center gap-2 px-3 py-2 rounded border border-verified/40 bg-verified/10 text-verified-soft text-sm hover:bg-verified/20 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded border border-edge bg-surface text-ink text-sm hover:bg-surface-2 hover:border-edge-strong transition-colors focus-ring"
           >
             <Icon name="bolt" />
             Run New Audit
@@ -81,7 +81,7 @@ export default function RunHistory({ setPage, openRun }) {
         />
       </div>
 
-      <div className="border border-edge bg-surface rounded-md">
+      <div className="border border-edge bg-surface rounded-lg overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-edge flex-wrap">
           {[
             { key: 'all', label: 'All' },
@@ -181,7 +181,7 @@ export default function RunHistory({ setPage, openRun }) {
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => openRun(run)}
-                      className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-verified-soft transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-verified-soft transition-colors focus-ring"
                     >
                       Inspect
                       <Icon name="arrow_forward" className="w-4 h-4" />
