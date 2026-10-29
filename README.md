@@ -163,7 +163,6 @@ dashboard/            Vite + React + Tailwind front end (run history,
   data/               Generated run history + engine constants (from Python)
   scripts/            verify_analytics.mjs (matrix/breakdown agreement),
                      render_smoke.jsx (renders all 4 pages)
-DEMO_SCRIPT.md        Shot-by-shot recording script
 ```
 
 ## Why the sandbox branching matters here

@@ -22,8 +22,7 @@ Scenario names map to plain diff files in ../patches/<scenario>.diff --
 see patches/README.md for how these are structured.
 
 This is deliberately a single, linear script with loud, readable print
-output -- built for screen recording, not for production use. See
-DEMO_SCRIPT.md for the exact narration to pair with this output.
+output -- built for screen recording, not for production use.
 """
 
 from __future__ import annotations
