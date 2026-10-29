@@ -12,6 +12,51 @@ trusting the same tests the original agent already passed.
 Built for the **Nebius x NVIDIA Global AI Hackathon 2026** — Coding and
 Agentic Engineering track.
 
+## Why AgentAudit?
+
+AI now writes a large share of what gets merged. Fully AI-generated code
+went from **1% to 27.6% of pull requests** in the past year, and the
+bottleneck moved from writing code to reviewing it. CodeRabbit, Greptile,
+and Qodo have raised hundreds of millions between them to own that review
+layer, and most developers already use AI-assisted review.
+
+The gap all of them share: **they read the code, they don't run it.**
+Each reasons over a diff and its surrounding context — none executes what
+it reviews. So when an agent makes CI green by editing an assertion
+instead of fixing the bug, a reviewer sees a plausible one-line change,
+not a cheat.
+
+The benchmark community learned this the hard way through 2026:
+
+- OpenAI **dropped SWE-bench Verified** in February 2026 after finding
+  59.4% of its problems had flawed tests
+- DeepSWE measured a **32% verifier error rate** on SWE-bench Pro
+- METR found **half of all SWE-bench-passing PRs would never be merged**
+- UC Berkeley showed every major agent benchmark could be near-perfectly
+  gamed with `conftest.py` patches that make test suites always pass
+
+The remedy that emerged — agentic audits plus hardened verifiers — lives
+only inside those benchmark datasets. Nothing points it at your own pull
+request. **AgentAudit applies it to a real PR.**
+
+It is a verification layer, not a review layer. It does not read your
+diff and offer opinions; it executes.
+
+| Approach | Runs the code | Flags an agent editing tests | Blind-spot tests from the ticket, gated on the patch | Judges diff against the ticket |
+|---|---|---|---|---|
+| AI reviewers — CodeRabbit, Greptile, Qodo | no | no | no | reads and comments, does not verify |
+| Mutation testing — Stryker, mutmut | yes | only as a falling score | no | no |
+| Behavioral runners — Ito, screencli | yes | no | no | no |
+| Benchmark verifiers — SWE-bench Pro | yes | yes | no | no |
+| **AgentAudit** | **yes** | **yes** (Check A) | **yes** (Check C) | **yes** (Check D) |
+
+Honest scope: this is a hackathon prototype, not a product. It runs
+against scripted demo patches, and Check D replays a recorded fixture for
+pasted diffs rather than evaluating them live. It complements a reviewer
+rather than replacing one. The claim is narrower than "better code
+review" — it is that *the tests pass* was never evidence, and now it can
+be.
+
 ## What it catches
 
 Given a PR/diff produced by any coding agent, AgentAudit runs four
