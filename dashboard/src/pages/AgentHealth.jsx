@@ -102,11 +102,14 @@ export default function AgentHealth() {
               </tr>
             </thead>
             <tbody>
-              {matrix.map((row) => (
-                <tr key={row.scenario} className="border-b border-edge/60 last:border-0">
+              {matrix.map((row, i) => (
+                <tr
+                  key={row.scenario}
+                  className={`${i % 2 === 1 ? 'row-alt' : ''} border-b border-edge/60 last:border-0`}
+                >
                   <td className="px-3 py-2.5">
-                    <div className="metric text-ink">{row.scenario}</div>
-                    <div className="text-xs text-ink-faint max-w-md truncate">
+                    <div className="metric txt">{row.scenario}</div>
+                    <div className="text-xs txt-dim max-w-md truncate">
                       {SCENARIOS[row.scenario]?.description}
                     </div>
                   </td>
@@ -114,10 +117,10 @@ export default function AgentHealth() {
                     const passed = cell.passed
                     const cls =
                       passed === null
-                        ? 'bg-surface-2 border-edge text-ink-faint'
+                        ? 'bg-[rgba(255,255,255,0.5)] border-edge text-ink-faint'
                         : passed
-                          ? 'bg-verified/10 border-verified/35 text-verified-soft'
-                          : 'bg-flagged/12 border-flagged/40 text-flagged-soft'
+                          ? 'bg-[#d1fae5] border-[#6ee7b7] text-[#065f46]'
+                          : 'bg-[#fee2e2] border-[#fca5a5] text-[#991b1b]'
                     return (
                       <td key={cell.key} className="px-3 py-2.5">
                         <span
@@ -151,7 +154,7 @@ export default function AgentHealth() {
           {breakdown.map((b, i) => (
             <div
               key={b.key}
-              className="flex items-center gap-4 border border-edge bg-panel/40 rounded px-4 py-3"
+              className="flex items-center gap-4 border border-edge bg-[rgba(255,255,255,0.5)] rounded-xl px-4 py-3"
             >
               <span className="metric text-sm text-ink-faint w-6">
                 {String(i + 1).padStart(2, '0')}.
@@ -248,7 +251,7 @@ export default function AgentHealth() {
         ) : (
           <div className="grid md:grid-cols-2 gap-3">
             {catalog.map((f) => (
-              <div key={f.kind} className="border border-edge bg-panel/40 rounded px-4 py-3">
+              <div key={f.kind} className="border border-edge bg-[rgba(255,255,255,0.5)] rounded-xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Icon name="bug" className="text-flagged-soft" />
                   <span className="text-sm text-ink metric">{f.kind}</span>
@@ -275,7 +278,7 @@ function HealthCell({ title, value, tone, lines }) {
   const color =
     tone === 'verified' ? 'text-verified-soft' : 'text-ink-dim'
   return (
-    <div className="border border-edge bg-panel/40 rounded px-4 py-3">
+    <div className="border border-edge bg-[rgba(255,255,255,0.5)] rounded-xl px-4 py-3">
       <div className="micro-label text-ink-faint">{title}</div>
       <div className={`metric text-sm mt-1 ${color}`}>{value}</div>
       <div className="text-xs text-ink-faint mt-1.5 space-y-0.5">

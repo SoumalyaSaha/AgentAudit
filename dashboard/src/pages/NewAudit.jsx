@@ -79,8 +79,8 @@ export default function NewAudit({ setPage, openRun }) {
       </header>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <section className="border border-edge bg-surface rounded-lg">
-          <header className="px-4 py-2.5 border-b border-edge bg-panel/60 flex items-center gap-2">
+        <section className="border border-edge bg-surface rounded-2xl shadow-card">
+          <header className="px-4 py-2.5 border-b border-edge bg-[rgba(255,255,255,0.5)] flex items-center gap-2">
             <button
               onClick={() => setMode('scenario')}
               className={`metric text-[11px] px-2.5 py-1 rounded border ${
@@ -148,7 +148,7 @@ export default function NewAudit({ setPage, openRun }) {
             <button
               onClick={start}
               disabled={running || (mode === 'paste' && !diff.trim())}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded bg-verified text-canvas text-sm font-semibold hover:bg-verified-soft active:translate-y-px disabled:opacity-40 disabled:hover:bg-verified transition-colors focus-ring"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-pending text-[#120e0c] text-sm font-semibold hover:bg-[#fbbf24] active:translate-y-px disabled:opacity-40 disabled:hover:bg-pending transition-colors focus-ring"
             >
               <Icon name={running ? 'stop' : 'play'} />
               {running ? 'Running…' : 'Run Audit'}
@@ -156,8 +156,8 @@ export default function NewAudit({ setPage, openRun }) {
           </div>
         </section>
 
-        <section className="border border-edge bg-surface rounded-lg">
-          <header className="px-4 py-2.5 border-b border-edge bg-panel/60 flex items-center gap-2">
+        <section className="border border-edge bg-surface rounded-2xl shadow-card">
+          <header className="px-4 py-2.5 border-b border-edge bg-[rgba(255,255,255,0.5)] flex items-center gap-2">
             <Icon name="monitoring" className="text-ink-faint" />
             <h2 className="text-sm font-medium">Verification Pipeline State</h2>
             {result && (
@@ -174,12 +174,12 @@ export default function NewAudit({ setPage, openRun }) {
               return (
                 <div
                   key={p.key}
-                  className={`flex items-center gap-3 border rounded px-3 py-2 ${
+                  className={`flex items-center gap-3 border rounded-lg px-3 py-2 ${
                     done
                       ? done.passed
-                        ? 'border-verified/30 bg-verified/5'
-                        : 'border-flagged/30 bg-flagged/5'
-                      : 'border-edge bg-panel/30'
+                        ? 'border-[#6ee7b7] bg-[#d1fae5]'
+                        : 'border-[#fca5a5] bg-[#fee2e2]'
+                      : 'border-edge bg-[rgba(255,255,255,0.5)]'
                   }`}
                 >
                   <span className="metric text-[10px] text-ink-faint w-4">{p.key}</span>
@@ -188,7 +188,7 @@ export default function NewAudit({ setPage, openRun }) {
                     <>
                       <span
                         className={`metric text-[10px] ${
-                          done.passed ? 'text-verified-soft' : 'text-flagged-soft'
+                          done.passed ? 'text-[#065f46]' : 'text-[#991b1b]'
                         }`}
                       >
                         {done.passed ? 'PASSED' : 'FAILED'}

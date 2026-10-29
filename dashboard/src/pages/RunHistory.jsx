@@ -47,7 +47,7 @@ export default function RunHistory({ setPage, openRun }) {
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => setPage('new')}
-            className="flex items-center gap-2 px-3 py-2 rounded border border-edge bg-surface text-ink text-sm hover:bg-surface-2 hover:border-edge-strong transition-colors focus-ring"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pending text-[#120e0c] text-xs font-semibold hover:bg-[#fbbf24] active:translate-y-px transition-colors focus-ring"
           >
             <Icon name="bolt" />
             Run New Audit
@@ -81,7 +81,7 @@ export default function RunHistory({ setPage, openRun }) {
         />
       </div>
 
-      <div className="border border-edge bg-surface rounded-lg overflow-hidden">
+      <div className="border border-edge bg-surface rounded-2xl shadow-card overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-edge flex-wrap">
           {[
             { key: 'all', label: 'All' },
@@ -122,7 +122,7 @@ export default function RunHistory({ setPage, openRun }) {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="metric text-[11px] bg-panel border border-edge rounded px-2 py-1 text-ink-dim"
+              className="metric text-[11px] bg-[rgba(255,255,255,0.55)] border border-edge rounded px-2 py-1 text-ink-dim"
             >
               <option value="newest">Timestamp (newest)</option>
               <option value="oldest">Timestamp (oldest)</option>
@@ -147,17 +147,17 @@ export default function RunHistory({ setPage, openRun }) {
               </tr>
             </thead>
             <tbody>
-              {runs.map((run) => (
+              {runs.map((run, i) => (
                 <tr
                   key={run.id || `${run.scenario}-${run.timestamp}`}
-                  className="border-b border-edge/60 last:border-0 hover:bg-surface-2/40 transition-colors"
+                  className={`${i % 2 === 1 ? 'row-alt' : ''} border-b border-edge/60 last:border-0 hover:bg-[rgba(147,197,253,0.3)] transition-colors`}
                 >
                   <td className="px-4 py-3">
                     <VerdictBadge verdict={run.verdict} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="metric text-ink">{run.scenario}</div>
-                    <div className="text-xs text-ink-faint max-w-lg truncate">
+                    <div className="metric txt">{run.scenario}</div>
+                    <div className="text-xs txt-dim max-w-lg truncate">
                       {SCENARIOS[run.scenario]?.description || '—'}
                     </div>
                   </td>
@@ -165,23 +165,23 @@ export default function RunHistory({ setPage, openRun }) {
                     <CheckStrip checks={run.checks} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="metric text-[11px] text-ink-dim">
+                    <div className="metric text-[11px] txt">
                       {run.backend === 'sandbox' ? 'Nebius Sandboxes' : 'Local Backend'}
                     </div>
-                    <div className="metric text-[11px] text-ink-faint">
+                    <div className="metric text-[11px] txt-dim">
                       {modeLabel(run)}
                     </div>
                   </td>
-                  <td className="px-4 py-3 metric text-ink-dim whitespace-nowrap">
+                  <td className="px-4 py-3 metric txt whitespace-nowrap">
                     {fmtDuration(run.duration_ms)}
                   </td>
-                  <td className="px-4 py-3 metric text-[11px] text-ink-faint whitespace-nowrap">
+                  <td className="px-4 py-3 metric text-[11px] txt-dim whitespace-nowrap">
                     {fmtTimestamp(run.timestamp)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => openRun(run)}
-                      className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-verified-soft transition-colors focus-ring"
+                      className="inline-flex items-center gap-1.5 text-xs txt-dim hover:text-verified transition-colors focus-ring"
                     >
                       Inspect
                       <Icon name="arrow_forward" className="w-4 h-4" />

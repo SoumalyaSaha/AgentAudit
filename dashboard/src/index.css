@@ -1,23 +1,30 @@
 @import "tailwindcss";
 
+/* Obsidian Verifier — light "cream / sky / terracotta / teal" variant, matching
+   the rendered Stitch screens: pale cream canvas, sky-blue cards with blue
+   shadows, terracotta top bar, teal sidebar rail, navy text, black alternating
+   table rows, amber primary actions. */
 @theme {
-  --color-canvas: #0b0f17;
-  --color-panel: #0f172a;
-  --color-surface: #111827;
-  --color-surface-2: #1e293b;
-  --color-edge: #1e293b;
-  --color-edge-strong: #334155;
-  --color-ink: #f8fafc;
-  --color-ink-dim: #94a3b8;
-  --color-ink-faint: #64748b;
-  --color-verified: #10b981;
-  --color-verified-soft: #34d399;
-  --color-verified-deep: #059669;
-  --color-flagged: #ef4444;
-  --color-flagged-soft: #f87171;
-  --color-flagged-deep: #dc2626;
+  --color-canvas: #fefcd0;
+  --color-panel: #d9edff;
+  --color-surface: #d9edff;
+  --color-surface-2: #cce7ff;
+  --color-edge: #93c5fd;
+  --color-edge-strong: #3b82f6;
+  --color-ink: #0a2540;
+  --color-ink-dim: #1e3a5f;
+  --color-ink-faint: #4a6b8a;
+  --color-verified: #059669;
+  --color-verified-soft: #065f46;
+  --color-flagged: #dc2626;
+  --color-flagged-soft: #991b1b;
   --color-pending: #f59e0b;
-  --color-edge-bright: #475569;
+  --color-header: #b87b68;
+  --color-rail: #6ca8af;
+  --color-rail-ink: #0d2229;
+  --color-code: #0d2229;
+  --color-code-ink: #f5efe6;
+  --color-row: #0a0a0a;
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -33,6 +40,9 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  ::selection {
+    background: rgba(245, 158, 11, 0.3);
+  }
 }
 
 /* Mono labels / metrics: uppercase, wide tracking, tabular figures. */
@@ -50,10 +60,19 @@ body {
   text-transform: uppercase;
 }
 
-/* Functional radiance — per the Obsidian Verifier elevation spec these denote
-   state changes and are never decorative. */
+/* Sky-blue card elevation — the screens layer blue-tinted shadows, not borders
+   alone. */
+.shadow-card {
+  box-shadow: 0 10px 25px -5px rgba(147, 197, 253, 0.4),
+    0 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+.shadow-card-sm {
+  box-shadow: 0 4px 14px 0 rgba(147, 197, 253, 0.25);
+}
+
+/* Functional radiance — denote state changes, never decoration. */
 .glow-verified {
-  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.35);
 }
 .glow-flagged {
   box-shadow: 0 0 16px -2px rgba(239, 68, 68, 0.35);
@@ -71,10 +90,28 @@ body {
   .pulse-dot { animation: none; }
 }
 
-/* Keyboard focus rings: 2px canvas-colored inner ring + 4px border-default outer. */
+/* Keyboard focus rings. */
 .focus-ring:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--color-edge-strong);
+}
+
+/* Solid black alternating rows on the audit table and detection matrix. */
+.txt {
+  color: var(--color-ink);
+}
+.txt-dim {
+  color: var(--color-ink-faint);
+}
+.row-alt {
+  background: var(--color-row);
+  color: #e7e5e4;
+}
+.row-alt .txt {
+  color: #e7e5e4;
+}
+.row-alt .txt-dim {
+  color: #a8a29e;
 }
 
 ::-webkit-scrollbar {
@@ -82,12 +119,12 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f17;
+  background: #f2edd0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+  background: #93c5fd;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #60a5fa;
 }

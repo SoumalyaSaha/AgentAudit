@@ -19,10 +19,10 @@ function CheckCard({ run, check }) {
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden ${
+      className={`border rounded-xl shadow-card-sm overflow-hidden ${
         passed
-          ? 'border-verified/30 bg-surface'
-          : 'border-flagged/35 bg-surface glow-flagged'
+          ? 'border-[#6ee7b7] bg-[#dceefe]'
+          : 'border-[#fca5a5] bg-[#dceefe] glow-flagged'
       }`}
     >
       <button
@@ -37,8 +37,8 @@ function CheckCard({ run, check }) {
           <span
             className={`metric text-[10px] px-2 py-0.5 rounded border ${
               passed
-                ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft'
-                : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft'
+                ? 'bg-[#d1fae5] border-[#6ee7b7] text-[#065f46]'
+                : 'bg-[#fee2e2] border-[#fca5a5] text-[#991b1b]'
             }`}
           >
             {passed ? 'PASSED' : 'FAILED CHECK'}
@@ -143,7 +143,7 @@ function DiffPanel({ run }) {
         <div className="micro-label text-ink-faint">Files touched</div>
         <div className="flex flex-wrap gap-2">
           {files.map((f) => (
-            <span key={f} className="metric text-[11px] px-2 py-0.5 rounded border border-edge bg-panel text-ink-dim">
+            <span key={f} className="metric text-[11px] px-2 py-0.5 rounded border border-edge bg-[rgba(255,255,255,0.55)] text-ink-dim">
               {f}
             </span>
           ))}
@@ -181,9 +181,9 @@ export default function RunDetail({ run, setPage }) {
     : `VERIFIED: all ${passedCount} checks passed`
 
   const bannerTone = failed.length
-    ? 'border-flagged/40 bg-[rgba(127,29,29,0.20)] glow-flagged'
-    : 'border-verified/40 bg-[rgba(6,78,59,0.20)] glow-verified'
-  const bannerText = failed.length ? 'text-flagged-soft' : 'text-verified-soft'
+    ? 'border-[rgba(239,68,68,0.45)] bg-[linear-gradient(135deg,#58a6ff_0%,#6cb3ff_100%)]'
+    : 'border-[rgba(16,185,129,0.4)] bg-[linear-gradient(135deg,#58a6ff_0%,#6cb3ff_100%)]'
+  const bannerText = 'text-[#0f172a]'
 
   return (
     <div className="p-6 space-y-5">
@@ -196,7 +196,7 @@ export default function RunDetail({ run, setPage }) {
         <span className="metric text-ink">{run.scenario}</span>
       </nav>
 
-      <div className={`border ${bannerTone} rounded-lg px-5 py-4`}>
+      <div className={`border ${bannerTone} rounded-2xl shadow-card px-5 py-4`}>
         <div className="flex items-center gap-3 flex-wrap">
           <VerdictBadge verdict={run.verdict} size="lg" />
           <span className={`text-lg font-medium ${bannerText}`}>{headline}</span>
@@ -278,15 +278,16 @@ export default function RunDetail({ run, setPage }) {
 }
 
 function Statish({ icon, label, value, tone }) {
-  const color = tone === 'verified' ? 'text-verified-soft' : 'text-flagged-soft'
-  const iconColor = tone === 'verified' ? 'text-verified' : 'text-flagged'
+  const border = tone === 'verified' ? 'border-[rgba(16,185,129,0.35)]' : 'border-[rgba(239,68,68,0.35)]'
+  const valueColor = tone === 'verified' ? 'text-[#004d30]' : 'text-[#9f1239]'
+  const iconColor = tone === 'verified' ? 'text-[#047857]' : 'text-[#b91c1c]'
   return (
-    <div className="border border-edge bg-surface rounded-lg px-4 py-3">
-      <div className="flex items-center gap-2 micro-label text-ink-faint">
+    <div className={`border ${border} bg-[#58a6ff] rounded-xl shadow-card-sm px-4 py-3`}>
+      <div className="flex items-center gap-2 micro-label text-[#0a2540]/85">
         <Icon name={icon} className={iconColor} />
         <span>{label}</span>
       </div>
-      <div className={`metric text-xl mt-1.5 ${color}`}>{value}</div>
+      <div className={`metric text-xl mt-1.5 ${valueColor}`}>{value}</div>
     </div>
   )
 }

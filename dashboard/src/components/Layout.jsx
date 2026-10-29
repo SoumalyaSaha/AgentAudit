@@ -85,34 +85,34 @@ export default function Layout({ page, setPage, children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-edge bg-panel/80 backdrop-blur sticky top-0 z-20">
+      <header className="border-b border-[rgba(0,0,0,0.15)] bg-header sticky top-0 z-20">
         <div className="px-6 h-14 flex items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded border border-verified/40 bg-verified/10 grid place-items-center">
-              <Icon name="verified" className="text-verified-soft" />
+            <span className="w-6 h-6 rounded border border-white/40 bg-white/20 grid place-items-center">
+              <Icon name="verified" className="text-white" />
             </span>
-            <span className="font-semibold tracking-tight">AgentAudit</span>
+            <span className="font-semibold tracking-tight text-[#fdf6ec]">AgentAudit</span>
           </div>
 
-          <div className="h-5 w-px bg-edge" />
+          <div className="h-5 w-px bg-black/20" />
 
-          <div className="flex items-center gap-2 micro-label text-ink-dim">
-            <Icon name="memory" className="text-ink-faint" />
+          <div className="flex items-center gap-2 micro-label text-[#fdf6ec]/85">
+            <Icon name="memory" className="text-[#fdf6ec]/70" />
             <span>Backend:</span>
-            <span className="text-ink">
+            <span className="text-[#fdf6ec]">
               {hasSandbox ? 'Local + Sandbox' : 'Local'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 micro-label text-ink-dim">
-            <Icon name="sync" className="text-ink-faint" />
+          <div className="flex items-center gap-2 micro-label text-[#fdf6ec]/85">
+            <Icon name="sync" className="text-[#fdf6ec]/70" />
             <span>Nemotron:</span>
-            <span className="text-ink">
+            <span className="text-[#fdf6ec]">
               {hasLive ? 'live + recorded replay' : 'recorded replay'}
             </span>
           </div>
 
-          <div className="ml-auto flex items-center gap-4 text-ink-faint">
+          <div className="ml-auto flex items-center gap-4 text-[#fdf6ec]/80">
             <Icon name="notifications" />
             <Icon name="person" />
             <Icon name="security" />
@@ -121,33 +121,36 @@ export default function Layout({ page, setPage, children }) {
       </header>
 
       <div className="flex flex-1">
-        <aside className="w-[240px] shrink-0 border-r border-edge bg-panel/40 hidden md:block">
+        <aside className="w-[240px] shrink-0 border-r border-[rgba(13,34,41,0.2)] bg-rail text-rail-ink hidden md:block">
           <div className="px-5 py-5">
-            <div className="micro-label text-ink-faint mb-1">Auditor Gateway</div>
-            <div className="text-sm text-ink-dim">Audit Operations</div>
+            <div className="micro-label text-rail-ink/70 mb-1">Auditor Gateway</div>
+            <div className="text-sm text-rail-ink">Audit Operations</div>
           </div>
           <nav className="px-3">
             {NAV.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setPage(item.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-sm transition-colors focus-ring ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 text-sm transition-colors focus-ring ${
                   page === item.key
-                    ? 'bg-surface-2 text-ink border border-edge-strong'
-                    : 'text-ink-dim hover:text-ink hover:bg-surface'
+                    ? 'bg-[rgba(13,34,41,0.28)] text-white border border-[rgba(13,34,41,0.35)]'
+                    : 'text-rail-ink/85 hover:text-rail-ink hover:bg-[rgba(13,34,41,0.12)] border border-transparent'
                 }`}
               >
-                <Icon name={item.icon} className={page === item.key ? 'text-verified-soft' : ''} />
+                <Icon
+                  name={item.icon}
+                  className={page === item.key ? 'text-white' : 'text-rail-ink/70'}
+                />
                 {item.label}
               </button>
             ))}
           </nav>
-          <div className="px-5 py-6 mt-4 border-t border-edge">
-            <div className="flex items-center gap-2 micro-label text-ink-faint">
+          <div className="px-5 py-6 mt-4 border-t border-[rgba(13,34,41,0.2)]">
+            <div className="flex items-center gap-2 micro-label text-rail-ink/75">
               <Icon name="terminal" />
               <span>agent-cli v1.4</span>
             </div>
-            <div className="mt-3 flex items-center gap-2 micro-label text-ink-faint">
+            <div className="mt-3 flex items-center gap-2 micro-label text-rail-ink/75">
               <Icon name="help" />
               <span>help</span>
             </div>

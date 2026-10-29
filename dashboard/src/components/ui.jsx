@@ -4,9 +4,9 @@ import { fmtDuration } from '../data'
 
 export function Panel({ title, subtitle, right, children, className = '', icon }) {
   return (
-    <section className={`border border-edge bg-surface rounded-lg overflow-hidden ${className}`}>
+    <section className={`border border-edge bg-surface rounded-2xl shadow-card overflow-hidden ${className}`}>
       {(title || right) && (
-        <header className="flex items-center gap-3 px-4 py-2.5 border-b border-edge bg-panel/60">
+        <header className="flex items-center gap-3 px-4 py-2.5 border-b border-edge bg-[rgba(255,255,255,0.5)]">
           {icon && <Icon name={icon} className="text-ink-faint" />}
           <div className="min-w-0">
             {title && <h2 className="text-sm font-medium truncate">{title}</h2>}
@@ -36,7 +36,7 @@ export function StatCard({ icon, label, value, sub, tone = 'default', valueClass
     pending: 'text-pending',
   }[tone]
   return (
-    <div className={`border ${toneRing} bg-surface rounded-lg px-4 py-3`}>
+    <div className={`border ${toneRing} bg-surface rounded-xl shadow-card-sm px-4 py-3`}>
       <div className="flex items-center gap-2 micro-label text-ink-faint">
         {icon && <Icon name={icon} className={iconTone} />}
         <span className="truncate">{label}</span>
@@ -52,10 +52,10 @@ export function VerdictBadge({ verdict, size = 'sm' }) {
   const pad = size === 'lg' ? 'px-3 py-1 text-xs' : 'px-2 py-0.5 text-[10px]'
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded border ${pad} font-mono font-semibold tracking-wider ${
+      className={`inline-flex items-center gap-1.5 rounded-full border ${pad} font-mono font-semibold tracking-wider ${
         verified
-          ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft glow-verified'
-          : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft glow-flagged'
+          ? 'bg-[#d1fae5] border-[#6ee7b7] text-[#065f46] glow-verified'
+          : 'bg-[#fee2e2] border-[#fca5a5] text-[#991b1b] glow-flagged'
       }`}
     >
       <span
@@ -74,8 +74,8 @@ export function CheckStrip({ checks, compact = false }) {
           key={c.key}
           className={`metric text-[10px] px-1.5 py-0.5 rounded border ${
             c.passed
-              ? 'bg-[rgba(6,78,59,0.25)] border-[rgba(16,185,129,0.40)] text-verified-soft'
-              : 'bg-[rgba(127,29,29,0.30)] border-[rgba(239,68,68,0.50)] text-flagged-soft'
+              ? 'bg-[#d1fae5] border-[#6ee7b7] text-[#065f46]'
+              : 'bg-[#fee2e2] border-[#fca5a5] text-[#991b1b]'
           }`}
           title={`${c.name}: ${c.passed ? 'PASS' : 'FAIL'}`}
         >
@@ -89,15 +89,15 @@ export function CheckStrip({ checks, compact = false }) {
 export function ModeBadges({ run, usesModel, modelName }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-panel text-ink-dim">
+      <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-[rgba(255,255,255,0.55)] text-ink-dim">
         {run.backend === 'sandbox' ? 'Nebius Sandboxes' : 'Local Backend'}
       </span>
       {usesModel ? (
-        <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-panel text-ink-dim">
+        <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-[rgba(255,255,255,0.55)] text-ink-dim">
           {run.nemotron_mode === 'live' ? 'Nemotron (live)' : 'Recorded replay'}
         </span>
       ) : (
-        <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-panel text-ink-faint">
+        <span className="metric text-[10px] px-1.5 py-0.5 rounded border border-edge bg-[rgba(255,255,255,0.55)] text-ink-faint">
           Static analysis (no model)
         </span>
       )}
@@ -107,7 +107,7 @@ export function ModeBadges({ run, usesModel, modelName }) {
 
 export function KeyValue({ k, v, mono = false }) {
   return (
-    <div className="border border-edge bg-panel/40 rounded px-3 py-2">
+    <div className="border border-edge bg-[rgba(255,255,255,0.55)] rounded-xl px-3 py-2">
       <div className="micro-label text-ink-faint">{k}</div>
       <div className={`text-sm mt-0.5 break-words ${mono ? 'metric' : ''}`}>{v}</div>
     </div>
@@ -117,7 +117,7 @@ export function KeyValue({ k, v, mono = false }) {
 export function Collapsible({ label, children, defaultOpen = false, right }) {
   const [open, setOpen] = React.useState(defaultOpen)
   return (
-    <div className="border border-edge rounded bg-canvas/60">
+    <div className="border border-edge rounded-xl bg-[rgba(255,255,255,0.45)]">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface transition-colors focus-ring"
@@ -132,7 +132,7 @@ export function Collapsible({ label, children, defaultOpen = false, right }) {
 }
 
 export function CodeBlock({ text, diff = false, className = '' }) {
-  const base = `metric text-[11px] leading-[1.55] whitespace-pre-wrap break-words bg-surface-2 border border-edge rounded p-3 text-ink-dim ${className}`
+  const base = `metric text-[11px] leading-[1.55] whitespace-pre-wrap break-words bg-code text-code-ink border border-[#0d2229] rounded-xl p-3 ${className}`
   if (!diff) {
     return <pre className={base}>{text || '—'}</pre>
   }
@@ -143,9 +143,9 @@ export function CodeBlock({ text, diff = false, className = '' }) {
         const isAdd = line.startsWith('+') && !line.startsWith('+++')
         const isDel = line.startsWith('-') && !line.startsWith('---')
         const tone = isAdd
-          ? 'bg-[rgba(6,78,59,0.15)] text-verified-soft'
+          ? 'bg-[rgba(6,78,59,0.45)] text-[#6ee7b7]'
           : isDel
-            ? 'bg-[rgba(127,29,29,0.20)] text-flagged-soft'
+            ? 'bg-[rgba(127,29,29,0.45)] text-[#fca5a5]'
             : ''
         return (
           <div key={i} className={tone}>
