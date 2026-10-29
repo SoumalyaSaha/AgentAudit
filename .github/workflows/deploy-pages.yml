@@ -1,0 +1,99 @@
+name: Deploy dashboard to GitHub Pages
+
+# Builds dashboard/ and publishes the static bundle to GitHub Pages.
+#
+# The dashboard is a static SPA: Run History / Run Detail / Agent Health render
+# from the run_history.json snapshot baked in at build time, and New Audit calls
+# the Python runner at VITE_API_URL (the Render service).
+#
+# REQUIRED REPO SETUP (once):
+#   Settings -> Pages -> Source: "GitHub Actions"
+#   Settings -> Secrets and variables -> Actions -> Variables
+#     DASHBOARD_API_URL = https://<your-service>.onrender.com
+#   (If unset, the deploy still succeeds but New Audit and live Run History
+#    fall back to the bundled snapshot - the workflow prints a warning.)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; a newer push wins.
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      # Guard rails: these fail the build if a number is hardcoded or a page
+      # stops rendering. Same checks that protect the GOLDEN RULE locally.
+      - name: Verify dashboard data integrity
+        working-directory: dashboard
+        run: |
+          npm run verify:analytics
+          npm run verify:render
+
+      - name: Resolve backend URL
+        env:
+          VITE_API_URL: ${{ vars.DASHBOARD_API_URL }}
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::warning::DASHBOARD_API_URL is not set - building with a snapshot-only backend. Set it to your Render URL to make New Audit and live Run History work."
+          else
+            echo "Building with backend: $VITE_API_URL"
+          fi
+
+      - name: Build
+        working-directory: dashboard
+        env:
+          VITE_API_URL: ${{ vars.DASHBOARD_API_URL }}
+        run: npm run build
+
+      - name: Check emitted asset paths are relative
+        # base:'./' is what makes the site work under a nested project path
+        # (…github.io/AgentAudit/). A regression here yields a blank page.
+        run: |
+          if grep -RqE '(src|href)="/assets/' dashboard/dist/index.html; then
+            echo "::error::dist/index.html references root-absolute /assets/ - set base:'./' in vite.config.js"
+            exit 1
+          fi
+          echo "asset paths OK:"
+          grep -oE '(src|href)="[^"]*"' dashboard/dist/index.html || true
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

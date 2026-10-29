@@ -2,21 +2,31 @@
 """
 Local audit runner for the dashboard's "New Audit" page.
 
-Binds to 127.0.0.1 ONLY (never a public interface). Exposes a single
-run endpoint that executes the four AgentAudit checks against the local
-demo repo and streams per-check progress + durations back to the browser.
+Binds to 127.0.0.1 ONLY by default. Exposes a single run endpoint that
+executes the four AgentAudit checks against the local demo repo and
+streams per-check progress + durations back to the browser.
 
 Safety properties (deliberate):
-  - LOCAL BACKEND ONLY. No Nebius Sandboxes option, no live Nemotron
-    toggle, no API key handling of any kind. Checks C/D replay the
-    recorded fixtures in engine/fixtures.py.
+  - LOCAL BY DEFAULT. Binding anywhere else requires AGENTAUDIT_ALLOW_PUBLIC=1,
+    and a public bind additionally requires an explicit CORS allowlist. No
+    Nebius Sandboxes option, no live Nemotron toggle, no API key handling of
+    any kind. Checks C/D replay the recorded fixtures in engine/fixtures.py.
   - Pasted diffs are applied to a THROWAWAY copy of the demo repo
     (.agentaudit_work/custom-*) that is deleted when the run finishes.
-  - Completed runs are appended to dashboard/data/run_history.json.
+  - On a PUBLIC bind, only the five built-in scenarios are accepted. Pasted
+    diffs execute whatever test code they contain, which is safe on loopback
+    (your own machine) but is arbitrary code execution from strangers once the
+    port is exposed -- so it stays local unless AGENTAUDIT_ALLOW_CUSTOM=1.
+  - Completed runs are appended to dashboard/data/run_history.json. That file
+    lives on the host's disk: on an ephemeral host (Render free tier) runs
+    survive until the instance is redeployed or restarted.
 
 Usage:
     python scripts/audit_server.py            # 127.0.0.1:8765
     python scripts/audit_server.py --port 9000
+    # Public (Render-style) -- deliberately opt-in:
+    AGENTAUDIT_ALLOW_PUBLIC=1 AGENTAUDIT_ALLOWED_ORIGINS=https://<user>.github.io \
+        PORT=10000 python scripts/audit_server.py
 """
 
 from __future__ import annotations
@@ -24,8 +34,10 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import shutil
 import sys
+import threading
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +45,35 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "engine"))
+
+# Deployment knobs (all optional; local behaviour is unchanged without them).
+#
+#   PORT                    Render/Heroku-style hosts inject this. Default 8765.
+#   AGENTAUDIT_ALLOW_PUBLIC Must be "1" to bind anywhere other than loopback.
+#                           This is deliberately opt-in: the historical
+#                           guarantee has been "refuses to bind publicly".
+#   AGENTAUDIT_ALLOWED_ORIGINS
+#                           Comma-separated browser origins permitted by CORS.
+#                           Defaults to the local Vite dev server only.
+#   AGENTAUDIT_MAX_BODY     Max request body in bytes (default 1 MiB).
+#   AGENTAUDIT_COOLDOWN     Min seconds between runs per client IP (default 5).
+#   AGENTAUDIT_ALLOW_CUSTOM Set "1" to accept pasted diffs on a PUBLIC bind.
+#                           Always allowed on loopback.
+MAX_BODY = int(os.environ.get("AGENTAUDIT_MAX_BODY", str(1024 * 1024)))
+COOLDOWN_SECONDS = float(os.environ.get("AGENTAUDIT_COOLDOWN", "5"))
+ALLOW_PUBLIC = os.environ.get("AGENTAUDIT_ALLOW_PUBLIC", "").lower() in ("1", "true", "yes")
+ALLOW_CUSTOM = os.environ.get("AGENTAUDIT_ALLOW_CUSTOM", "").lower() in ("1", "true", "yes")
+# Set in main() from the address we actually bound, so the handler's policy
+# follows reality rather than the request's Origin header (which is spoofable).
+IS_PUBLIC = False
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        "AGENTAUDIT_ALLOWED_ORIGINS",
+        "http://127.0.0.1:5173,http://localhost:5173",
+    ).split(",")
+    if o.strip()
+]
 
 import history  # noqa: E402
 import scenarios as scenario_catalog  # noqa: E402
@@ -44,6 +85,12 @@ from checks import (  # noqa: E402
     check_d_description_match,
 )
 from local_backend import LocalBackend  # noqa: E402
+
+# One audit at a time: each run forks and executes pytest against a throwaway
+# copy, so parallel runs multiply CPU/disk cost with no benefit to a demo.
+_RUN_LOCK = threading.Lock()
+_LAST_RUN_AT: dict[str, float] = {}  # client IP -> monotonic timestamp
+_STATE_LOCK = threading.Lock()
 
 DEMO_REPO = REPO_ROOT / "demo_repo"
 WORK_ROOT = REPO_ROOT / ".agentaudit_work"
@@ -171,22 +218,39 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # quieter console
         pass
 
+    def _cors_origin(self) -> str | None:
+        """Reflect the caller's Origin only when it is explicitly allowed.
+
+        There is deliberately no wildcard: deploying publicly requires
+        AGENTAUDIT_ALLOWED_ORIGINS to name the Pages/preview origin, so the
+        server cannot be quietly opened to every site by accident. Non-browser
+        clients (curl, tests) send no Origin and don't need CORS at all.
+        """
+        origin = self.headers.get("Origin")
+        if not origin:
+            return None
+        return origin if origin in ALLOWED_ORIGINS else None
+
+    def _cors_headers(self) -> None:
+        origin = self._cors_origin()
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
     def _json(self, payload: dict, status: int = 200) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):  # noqa: N802
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self._cors_headers()
         self.end_headers()
 
     def do_GET(self):  # noqa: N802
@@ -206,7 +270,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.startswith("/api/run"):
             self._json({"error": "not found"}, 404)
             return
+        # 1. Reject oversized bodies on the header alone, before reading.
         length = int(self.headers.get("Content-Length") or 0)
+        if length > MAX_BODY:
+            self._json({"error": f"body too large (max {MAX_BODY} bytes)"}, 413)
+            return
         try:
             payload = json.loads(self.rfile.read(length) or b"{}")
         except json.JSONDecodeError:
@@ -218,45 +286,130 @@ class Handler(BaseHTTPRequestHandler):
         ticket_text = payload.get("ticket")
 
         if scenario == "custom-patch":
+            # Pasted diffs execute whatever test code they contain. That is the
+            # whole point of the product, and it is fine on loopback (your own
+            # machine), but on a public bind it hands arbitrary code execution
+            # to any visitor -- so scenarios only, unless deliberately re-enabled.
+            if IS_PUBLIC and not ALLOW_CUSTOM:
+                self._json(
+                    {
+                        "error": (
+                            "Paste Diff is disabled on this deployed instance; "
+                            "it only runs the built-in scenarios. Run it locally "
+                            "to audit your own diff (see README)."
+                        )
+                    },
+                    403,
+                )
+                return
             if not diff_text or not diff_text.strip():
                 self._json({"error": "a diff is required for a custom audit"}, 400)
+                return
+            if len(diff_text) > MAX_BODY:
+                self._json({"error": f"diff too large (max {MAX_BODY} bytes)"}, 413)
                 return
         elif scenario not in scenario_catalog.SCENARIOS:
             self._json({"error": f"unknown scenario: {scenario}"}, 400)
             return
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/x-ndjson")
-        self.send_header("Transfer-Encoding", "chunked")
-        self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-        self.end_headers()
+        # 2. Per-IP cooldown, so a public deployment cannot be spun in a loop.
+        client = self.client_address[0]
+        now = time.monotonic()
+        with _STATE_LOCK:
+            last = _LAST_RUN_AT.get(client)
+            if last is not None and (now - last) < COOLDOWN_SECONDS:
+                self._json(
+                    {"error": f"slow down: one audit per {COOLDOWN_SECONDS:g}s per client"},
+                    429,
+                )
+                return
+
+        # 3. One run at a time: each run forks and executes pytest, so parallel
+        #    requests only multiply CPU/disk cost without helping anyone.
+        if not _RUN_LOCK.acquire(blocking=False):
+            self._json(
+                {"error": "another audit is already running; try again in a moment"},
+                409,
+            )
+            return
+        with _STATE_LOCK:
+            _LAST_RUN_AT[client] = time.monotonic()
 
         try:
-            for event in run_audit(scenario, diff_text, ticket_text):
-                chunk = (json.dumps(event) + "\n").encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.send_header("Transfer-Encoding", "chunked")
+            self._cors_headers()
+            self.end_headers()
+
+            try:
+                for event in run_audit(scenario, diff_text, ticket_text):
+                    chunk = (json.dumps(event) + "\n").encode("utf-8")
+                    self.wfile.write(f"{len(chunk):X}\r\n".encode("ascii"))
+                    self.wfile.write(chunk)
+                    self.wfile.write(b"\r\n")
+                    self.wfile.flush()
+            except Exception as exc:  # surface failures to the UI, never crash silently
+                chunk = (json.dumps({"type": "error", "error": f"{type(exc).__name__}: {exc}"}).encode("utf-8") + b"\n")
                 self.wfile.write(f"{len(chunk):X}\r\n".encode("ascii"))
                 self.wfile.write(chunk)
                 self.wfile.write(b"\r\n")
                 self.wfile.flush()
-        except Exception as exc:  # surface failures to the UI, never crash silently
-            chunk = (json.dumps({"type": "error", "error": f"{type(exc).__name__}: {exc}"}) + "\n").encode("utf-8")
-            self.wfile.write(f"{len(chunk):X}\r\n".encode("ascii"))
-            self.wfile.write(chunk)
-            self.wfile.write(b"\r\n")
-        self.wfile.write(b"0\r\n\r\n")
-        self.wfile.flush()
+            self.wfile.write(b"0\r\n\r\n")
+            self.wfile.flush()
+        finally:
+            _RUN_LOCK.release()
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8765)
-    ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("PORT") or 8765),
+        help="default: $PORT if set (Render/Heroku inject one), else 8765",
+    )
+    ap.add_argument(
+        "--host",
+        default="0.0.0.0" if ALLOW_PUBLIC else "127.0.0.1",
+        help="loopback unless AGENTAUDIT_ALLOW_PUBLIC=1",
+    )
     args = ap.parse_args()
-    if args.host not in ("127.0.0.1", "localhost"):
-        raise SystemExit("refusing to bind anywhere but 127.0.0.1")
+
+    loopback = args.host in ("127.0.0.1", "localhost")
+    if not loopback and not ALLOW_PUBLIC:
+        raise SystemExit(
+            "refusing to bind anywhere but 127.0.0.1\n"
+            "  (set AGENTAUDIT_ALLOW_PUBLIC=1 to expose this deliberately)"
+        )
+
+    global IS_PUBLIC
+    IS_PUBLIC = not loopback
+
+    # defence in depth: a public bind must be paired with an explicit CORS
+    # allowlist -- the default only names the local dev server, which would
+    # leave a deployed frontend unable to reach it (silently confusing), so
+    # fail fast with instructions instead.
+    if not loopback and not os.environ.get("AGENTAUDIT_ALLOWED_ORIGINS"):
+        raise SystemExit(
+            "public bind needs an explicit CORS allowlist:\n"
+            "  set AGENTAUDIT_ALLOWED_ORIGINS=https://<your-github-username>.github.io"
+        )
+
     history.write_engine_info()
     srv = QuietServer((args.host, args.port), Handler)
-    print(f"AgentAudit local audit runner on http://{args.host}:{args.port}  (local only)")
+    scope = "loopback only" if loopback else f"PUBLIC, CORS={', '.join(ALLOWED_ORIGINS)}"
+    print(f"AgentAudit local audit runner on http://{args.host}:{args.port}  ({scope})")
+    if not loopback:
+        print(
+            "  public mode: per-IP cooldown "
+            f"{COOLDOWN_SECONDS:g}s, one run at a time, body cap {MAX_BODY}B"
+        )
+        print(
+            "  paste-diff runs: ENABLED (AGENTAUDIT_ALLOW_CUSTOM=1)"
+            if ALLOW_CUSTOM
+            else "  paste-diff runs: disabled (built-in scenarios only)"
+        )
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

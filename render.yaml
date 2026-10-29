@@ -1,0 +1,39 @@
+# Render Blueprint — AgentAudit API (the Python runner).
+#
+# The dashboard is a separate, static bundle deployed to GitHub Pages
+# (.github/workflows/deploy-pages.yml). It points at this service through the
+# DASHBOARD_API_URL repo variable, baked in at build time as VITE_API_URL.
+#
+# One-time setup in Render:
+#   New  -> Blueprint  -> connect this repo  -> Render reads this file
+#   Then copy the service URL (https://agentaudit-api-<hash>.onrender.com)
+#   into GitHub: Settings -> Secrets and variables -> Actions -> Variables
+#   -> DASHBOARD_API_URL  so the next dashboard build targets it.
+services:
+  - type: web
+    name: agentaudit-api
+    runtime: python
+    plan: free # spins down when idle; first request after idle wakes it (~30-60s)
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/audit_server.py
+    healthCheckPath: /api/runs
+    envVars:
+      # The server refuses any non-loopback bind unless this is set — a
+      # deliberate opt-in, so exposing the port is always an explicit act.
+      - key: AGENTAUDIT_ALLOW_PUBLIC
+        value: "1"
+      # CORS allowlist (exact origins; the server never sends a wildcard).
+      # GitHub Pages origin — must match the site that serves the dashboard.
+      - key: AGENTAUDIT_ALLOWED_ORIGINS
+        value: https://soumalyasaha.github.io
+      # Pasted diffs execute visitor-supplied test code, so the public endpoint
+      # accepts only the five built-in scenarios. Delete these two lines to
+      # re-enable Paste Diff for visitors (their code would run here).
+      # - key: AGENTAUDIT_ALLOW_CUSTOM
+      #   value: "1"
+      #
+      # PORT is injected by Render; scripts/audit_server.py reads $PORT itself.
+      #
+      # No secrets are configured or required: the audit runner has no API-key
+      # handling of any kind (it uses the Local backend and replayed fixtures).

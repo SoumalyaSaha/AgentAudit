@@ -2,14 +2,46 @@ import React from 'react'
 import { Icon } from '../components/Layout'
 import { CheckStrip, StatCard, VerdictBadge } from '../components/ui'
 import { RUNS, SCENARIOS, fmtDuration, fmtTimestamp, modeLabel } from '../data'
+import { getRuns, API_BASE } from '../api'
 
 export default function RunHistory({ setPage, openRun }) {
   const [tab, setTab] = React.useState('all')
   const [query, setQuery] = React.useState('')
   const [sort, setSort] = React.useState('newest')
 
+  // Live runs come from the Python runner; if it can't be reached we keep the
+  // bundled run_history.json snapshot so the page still shows real data rather
+  // than an empty table. Every figure below is computed from `allRuns`.
+  const [allRuns, setAllRuns] = React.useState(RUNS)
+  const [source, setSource] = React.useState('bundled') // 'live' | 'bundled'
+  const [loading, setLoading] = React.useState(true)
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  React.useEffect(() => {
+    const ac = new AbortController()
+    let cancelled = false
+    setLoading(true)
+    getRuns({ signal: ac.signal })
+      .then((list) => {
+        if (cancelled) return
+        setAllRuns(list)
+        setSource('live')
+      })
+      .catch((err) => {
+        if (cancelled || err?.name === 'AbortError') return
+        setSource('bundled')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+      ac.abort()
+    }
+  }, [refreshKey])
+
   const runs = React.useMemo(() => {
-    let list = [...RUNS]
+    let list = [...allRuns]
     if (tab === 'verified') list = list.filter((r) => r.verdict === 'VERIFIED')
     if (tab === 'flagged') list = list.filter((r) => r.verdict === 'FLAGGED')
     if (query.trim()) {
@@ -26,13 +58,13 @@ export default function RunHistory({ setPage, openRun }) {
         : a.timestamp.localeCompare(b.timestamp)
     )
     return list
-  }, [tab, query, sort])
+  }, [allRuns, tab, query, sort])
 
-  const total = RUNS.length
-  const verified = RUNS.filter((r) => r.verdict === 'VERIFIED').length
-  const flagged = RUNS.filter((r) => r.verdict === 'FLAGGED').length
+  const total = allRuns.length
+  const verified = allRuns.filter((r) => r.verdict === 'VERIFIED').length
+  const flagged = allRuns.filter((r) => r.verdict === 'FLAGGED').length
   const avg = total
-    ? RUNS.reduce((acc, r) => acc + (r.duration_ms || 0), 0) / total
+    ? allRuns.reduce((acc, r) => acc + (r.duration_ms || 0), 0) / total
     : 0
 
   return (
@@ -45,6 +77,34 @@ export default function RunHistory({ setPage, openRun }) {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <span
+            title={
+              source === 'live'
+                ? `Runs fetched from the audit runner at ${API_BASE}/runs`
+                : `Audit runner unavailable — showing the run_history.json snapshot bundled with this build`
+            }
+            className={`metric text-[11px] px-2.5 py-1 rounded border flex items-center gap-1.5 ${
+              source === 'live'
+                ? 'border-verified/40 text-verified-soft bg-verified/10'
+                : 'border-edge text-ink-faint bg-[rgba(255,255,255,0.55)]'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                loading ? 'bg-pending animate-pulse' : source === 'live' ? 'bg-verified' : 'bg-ink-faint'
+              }`}
+            />
+            {loading ? 'Connecting…' : source === 'live' ? 'Live runner' : 'Snapshot'}
+          </span>
+          <button
+            onClick={() => setRefreshKey((k) => k + 1)}
+            disabled={loading}
+            title="Re-fetch runs from the audit runner"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-edge bg-[rgba(255,255,255,0.55)] text-xs text-ink-dim hover:text-ink disabled:opacity-50 transition-colors focus-ring"
+          >
+            <Icon name="refresh" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
           <button
             onClick={() => setPage('new')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pending text-[#120e0c] text-xs font-semibold hover:bg-[#fbbf24] active:translate-y-px transition-colors focus-ring"
@@ -90,8 +150,8 @@ export default function RunHistory({ setPage, openRun }) {
           ].map((t) => {
             const count =
               t.key === 'all'
-                ? RUNS.length
-                : RUNS.filter((r) => r.verdict.toLowerCase() === t.key).length
+                ? allRuns.length
+                : allRuns.filter((r) => r.verdict.toLowerCase() === t.key).length
             return (
               <button
                 key={t.key}
@@ -203,7 +263,8 @@ export default function RunHistory({ setPage, openRun }) {
         <footer className="px-4 py-2.5 border-t border-edge text-xs text-ink-faint flex items-center gap-2">
           <Icon name="dataset" />
           <span>
-            Showing {runs.length} of {RUNS.length} recorded runs
+            Showing {runs.length} of {allRuns.length} recorded runs
+            {source === 'bundled' ? ' (bundled snapshot)' : ''}
           </span>
         </footer>
       </div>

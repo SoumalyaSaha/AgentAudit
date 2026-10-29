@@ -2,8 +2,7 @@ import React from 'react'
 import { Icon } from '../components/Layout'
 import { CheckStrip, VerdictBadge } from '../components/ui'
 import { SCENARIOS, fmtDuration } from '../data'
-
-const API = '/api'
+import { API_BASE, describeApiError } from '../api'
 
 export default function NewAudit({ setPage, openRun }) {
   const [mode, setMode] = React.useState('scenario')
@@ -26,7 +25,7 @@ export default function NewAudit({ setPage, openRun }) {
           ? { scenario }
           : { scenario: 'custom-patch', diff, ticket: ticket || undefined }
 
-      const res = await fetch(`${API}/run`, {
+      const res = await fetch(`${API_BASE}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -53,7 +52,7 @@ export default function NewAudit({ setPage, openRun }) {
         }
       }
     } catch (e) {
-      setError(String(e.message || e))
+      setError(describeApiError(e))
     } finally {
       setRunning(false)
     }
@@ -238,6 +237,13 @@ export default function NewAudit({ setPage, openRun }) {
             {error && (
               <div className="mt-3 border border-flagged/40 bg-flagged/10 rounded px-3 py-2 text-sm text-flagged-soft">
                 {error}
+                {error.startsWith('Cannot reach') && (
+                  <p className="text-xs text-ink-faint mt-1">
+                    This page needs the Python runner. Start it locally with{' '}
+                    <code className="font-mono">python scripts/audit_server.py</code> — see
+                    README &rarr; Quick start.
+                  </p>
+                )}
               </div>
             )}
 

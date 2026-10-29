@@ -1,6 +1,18 @@
 import React from 'react'
 import { ENGINE_INFO, RUNS, engineLabel, modeLabel } from '../data'
 
+// Where public/ assets live. Vite statically inlines `import.meta.env.BASE_URL`
+// in the browser bundle ( "/" in dev, "./" in a production build ), but the Node
+// render-smoke test has no such object -- hence the guard, so a logo URL can
+// never crash a page render.
+function assetBase() {
+  try {
+    return import.meta.env.BASE_URL || '/'
+  } catch {
+    return '/'
+  }
+}
+
 const NAV = [
   { key: 'history', label: 'Run History', icon: 'history' },
   { key: 'detail', label: 'Run Detail', icon: 'fact_check' },
@@ -88,15 +100,19 @@ export default function Layout({ page, setPage, children }) {
       <header className="border-b border-[rgba(0,0,0,0.15)] bg-header sticky top-0 z-20">
         <div className="px-6 h-14 flex items-center gap-4">
           <div className="flex items-center gap-2.5">
+            {/* BASE_URL, not a literal "/…": the production build is served
+                from a nested path (…github.io/AgentAudit/), where root-absolute
+                URLs would 404. In dev BASE_URL is "/", so local URLs are the
+                same as before. */}
             <img
-              src="/logo.png"
+              src={`${assetBase()}logo.png`}
               alt=""
               width={32}
               height={32}
               className="w-8 h-8 rounded-lg border border-white/25 shrink-0"
             />
             <img
-              src="/wordmark.png"
+              src={`${assetBase()}wordmark.png`}
               alt="AgentAudit"
               height={40}
               className="h-10 w-auto rounded-md border border-white/15 shrink-0"

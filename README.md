@@ -172,6 +172,64 @@ python scripts/audit_server.py     # http://127.0.0.1:8765 (127.0.0.1 only)
 
 See [`dashboard/README.md`](dashboard/README.md) for details.
 
+## Deployment
+
+The project ships in two halves, because the dashboard is a static bundle
+and the audit runner is a Python process:
+
+- **Dashboard (frontend)** → GitHub Pages: [`https://soumalyasaha.github.io/AgentAudit/`](https://soumalyasaha.github.io/AgentAudit/)
+- **Audit runner (backend)** → Render web service
+
+### One-time setup
+
+1. **Render** — create a web service from this repo's `render.yaml` Blueprint
+   (Render reads it at the repo root): **New → Blueprint → connect this repo**.
+   The service is named `agentaudit-api` and runs
+   `pip install -r requirements.txt` / `python scripts/audit_server.py`.
+
+   The Blueprint sets:
+   - `AGENTAUDIT_ALLOW_PUBLIC=1` — the deliberate opt-in that permits binding
+     beyond loopback (the server refuses otherwise).
+   - `AGENTAUDIT_ALLOWED_ORIGINS=https://soumalyasaha.github.io` — the exact
+     Pages origin allowed by CORS (no wildcard is ever sent).
+   - Paste Diff is disabled on that public instance (only the five built-in
+     scenarios run there); re-enable via `AGENTAUDIT_ALLOW_CUSTOM=1 if you want
+     pasted diffs executed on a public host.
+
+2. **GitHub Pages** — set **Settings → Pages → Source: GitHub Actions**.
+
+3. **Point the dashboard at the runner** — in the repo, set a *variable*
+   **Actions → Variables → New repository variable**: `DASHBOARD_API_URL =
+   https://<your-service>.onrender.com` (the Render service's URL).
+
+4. **Deploy** — push to `main`; the
+   [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)
+   workflow builds and publishes the dashboard, then the backend is live at the
+   URL you just captured.
+
+### What runs where, on the live site
+
+- **Run History, Run Detail, Agent Health** — a bundled snapshot of the
+  recorded runs is rendered first, then reconciled live against the runner's
+  `/api/runs` (the frontend shows a *Live runner* / *Snapshot* badge to make the
+  two states visible).
+- **New Audit** — live: it POSTs scenarios straight to the runner and streams
+  the per-check events.
+
+### Honest limits of a free-tier deployment
+
+- **Render free instances spin down** when idle; the first request after
+  inactivity can take ~30–60 s to wake. The runner is a lightweight stdlib
+  HTTP server, so this is only a cold-start delay.
+- **The Render filesystem is ephemeral.** Runs executed there do not survive a
+  redeploy or a restart; the history page falls back to the committed snapshot
+  when the runner is unreachable.
+- **Rate limiting is deliberate and simple:** 1 MiB body cap, one audit at a
+  time, 5 s cooldown per client IP.
+- **No secrets, no live calls** — the deployed instance runs the offline
+  Local backend and the recorded fixtures only, exactly like the recorded
+  demo.
+
 ## Repository layout
 
 ```
