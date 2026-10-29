@@ -120,4 +120,4 @@ here as proof of a real live-mode run.)*
   before every rehearsal so each take starts from a truly clean state
   (the command already does this itself with `rm -rf` before `cp -r`).
 - If anything about live narration goes wrong, the run itself cannot fail
-  differently between takes — see RECORDING_CHECKLIST.md for why.
+  differently between takes.

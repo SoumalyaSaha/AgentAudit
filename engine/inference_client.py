@@ -13,8 +13,7 @@ Two modes, controlled by the AGENTAUDIT_LIVE_MODE env var:
       chat completions endpoint using NVIDIA Nemotron models.
 
 Both code paths exist in the submitted repo -- the live path is real,
-tested, working code, not a stub. See RECORDING_CHECKLIST.md for how we
-capture proof of a live run.
+tested, working code, not a stub.
 """
 
 from __future__ import annotations

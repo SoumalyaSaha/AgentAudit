@@ -21,11 +21,11 @@ coded around (see create_checkpoint/_finish docstrings):
    to None), so stateful steps use run().wait() exclusively; fork ids
    are local unique keys since fresh handles start with uuid None.
 Observed latency: checkpoint ~8s, trivial run ~1.5s, full both-scenarios
-run ~66s vs ~8s local -- recording stays on LocalBackend per
-RECORDING_CHECKLIST.md (reliability), live Sandboxes as proven backup.
+run ~66s vs ~8s local -- recording stays on LocalBackend for
+reliability, live Sandboxes as proven backup.
 
-It is NOT used for the recorded demo video itself -- see fixtures.py and
-RECORDING_CHECKLIST.md for why the recording uses LocalBackend instead.
+It is NOT used for the recorded demo video itself -- see fixtures.py for
+why the recording uses LocalBackend instead.
 
 Auth: default IAMAuth reads NEBIUS_API_KEY / NEBIUS_PROJECT_ID from the
 environment and targets https://api.tokenfactory.nebius.com/sandboxes/

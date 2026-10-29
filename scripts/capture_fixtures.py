@@ -14,8 +14,7 @@ a timestamped, real transcript proving the live path works, which you
 attach to the submission notes / show briefly in the video or README.
 
 The actual recorded demo video should still run with
-AGENTAUDIT_LIVE_MODE unset (fixture mode) for reliability -- see
-RECORDING_CHECKLIST.md.
+AGENTAUDIT_LIVE_MODE unset (fixture mode) for reliability.
 """
 
 import datetime

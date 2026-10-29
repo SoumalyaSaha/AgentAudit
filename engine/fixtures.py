@@ -22,8 +22,7 @@ recording. This guarantees:
     once, honestly, and the recording replays the honest result.
 
 Before final submission: do at least one full LIVE_MODE run and capture
-that as supplementary evidence (screen recording or logged transcript),
-per RECORDING_CHECKLIST.md step 7.
+that as supplementary evidence (screen recording or logged transcript).
 """
 
 from __future__ import annotations

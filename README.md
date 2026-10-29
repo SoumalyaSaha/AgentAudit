@@ -12,9 +12,6 @@ trusting the same tests the original agent already passed.
 Built for the **Nebius x NVIDIA Global AI Hackathon 2026** — Coding and
 Agentic Engineering track.
 
-See [`PLANNING.md`](PLANNING.md) for the product plan and
-[`TRD.md`](TRD.md) for the full architecture.
-
 ## What it catches
 
 Given a PR/diff produced by any coding agent, AgentAudit runs four
@@ -105,7 +102,7 @@ python3 engine/run_demo.py both --live   # needs NEBIUS_API_KEY; costs credits
 
 A captured live transcript is at
 [`reference_output/live_capture_evidence.txt`](reference_output/live_capture_evidence.txt)
-(generated once ahead of the demo recording; see `RECORDING_CHECKLIST.md`).
+(generated once ahead of the demo recording).
 
 ## Dashboard (Vite + React + Tailwind)
 
@@ -166,10 +163,7 @@ dashboard/            Vite + React + Tailwind front end (run history,
   data/               Generated run history + engine constants (from Python)
   scripts/            verify_analytics.mjs (matrix/breakdown agreement),
                      render_smoke.jsx (renders all 4 pages)
-PLANNING.md          Product plan
-TRD.md               Technical architecture
 DEMO_SCRIPT.md        Shot-by-shot recording script
-RECORDING_CHECKLIST.md  Pre-recording verification steps
 ```
 
 ## Why the sandbox branching matters here
