@@ -57,6 +57,13 @@ export function latestRunFor(scenario, runs = RUNS) {
   return matches.reduce((a, b) => (a.timestamp >= b.timestamp ? a : b))
 }
 
+/** Most recent run overall — the default target for the Run Detail view,
+ *  so the nav item never lands on an empty page. */
+export function mostRecentRun(runs = RUNS) {
+  if (!runs.length) return null
+  return runs.reduce((a, b) => (a.timestamp >= b.timestamp ? a : b))
+}
+
 export function checkOf(run, key) {
   return (run.checks || []).find((c) => c.key === key) || null
 }

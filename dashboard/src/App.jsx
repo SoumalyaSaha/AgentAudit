@@ -4,7 +4,7 @@ import RunHistory from './pages/RunHistory'
 import RunDetail from './pages/RunDetail'
 import AgentHealth from './pages/AgentHealth'
 import NewAudit from './pages/NewAudit'
-import { RUNS, latestRunFor } from './data'
+import { RUNS, latestRunFor, mostRecentRun } from './data'
 
 export default function App() {
   const [page, setPage] = React.useState('history')
@@ -23,7 +23,9 @@ export default function App() {
   let content
   if (page === 'history') content = <RunHistory setPage={setPage} openRun={openRun} />
   else if (page === 'detail')
-    content = <RunDetail run={run} setPage={setPage} openScenario={openScenario} />
+    content = (
+      <RunDetail run={run || mostRecentRun()} setPage={setPage} openScenario={openScenario} />
+    )
   else if (page === 'health') content = <AgentHealth />
   else content = <NewAudit setPage={setPage} openRun={openRun} />
 
