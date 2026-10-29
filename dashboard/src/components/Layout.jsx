@@ -88,9 +88,13 @@ export default function Layout({ page, setPage, children }) {
       <header className="border-b border-[rgba(0,0,0,0.15)] bg-header sticky top-0 z-20">
         <div className="px-6 h-14 flex items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded border border-white/40 bg-white/20 grid place-items-center">
-              <Icon name="verified" className="text-white" />
-            </span>
+            <img
+              src="/logo.png"
+              alt="AgentAudit"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-lg border border-white/25 shrink-0"
+            />
             <span className="font-semibold tracking-tight text-[#fdf6ec]">AgentAudit</span>
           </div>
 
