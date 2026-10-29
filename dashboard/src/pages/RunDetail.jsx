@@ -250,7 +250,16 @@ export default function RunDetail({ run, setPage }) {
         <KeyValue k="Execution" v={run.backend === 'sandbox' ? 'Nebius Sandboxes' : 'Local Backend'} />
         <KeyValue
           k="Model"
-          v={run.nemotron_mode === 'live' ? 'Nemotron (live)' : 'Recorded replay'}
+          v={
+            <>
+              <span className="metric">{ENGINE_INFO.models.super}</span>
+              <div className="text-[10px] text-ink-faint mt-0.5">
+                {run.nemotron_mode === 'live'
+                  ? 'live inference via Token Factory'
+                  : 'recorded replay (no live call)'}
+              </div>
+            </>
+          }
         />
         <KeyValue k="Duration" v={fmtDuration(run.duration_ms)} mono />
       </div>
