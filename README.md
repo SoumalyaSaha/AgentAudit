@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="dashboard/public/wordmark.png" alt="AgentAudit — the trust layer for AI agents" width="360" />
+  <img src="dashboard/public/logo.png" alt="AgentAudit" width="220" />
 </p>
 
 # AgentAudit
