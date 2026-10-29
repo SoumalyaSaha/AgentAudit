@@ -90,12 +90,17 @@ export default function Layout({ page, setPage, children }) {
           <div className="flex items-center gap-2.5">
             <img
               src="/logo.png"
-              alt="AgentAudit"
+              alt=""
               width={32}
               height={32}
               className="w-8 h-8 rounded-lg border border-white/25 shrink-0"
             />
-            <span className="font-semibold tracking-tight text-[#fdf6ec]">AgentAudit</span>
+            <img
+              src="/wordmark.png"
+              alt="AgentAudit"
+              height={40}
+              className="h-10 w-auto rounded-md border border-white/15 shrink-0"
+            />
           </div>
 
           <div className="h-5 w-px bg-black/20" />
