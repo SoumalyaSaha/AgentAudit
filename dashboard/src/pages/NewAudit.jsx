@@ -74,7 +74,7 @@ export default function NewAudit({ setPage, openRun }) {
         <h1 className="text-2xl font-semibold tracking-tight">Run New Agent Verification Audit</h1>
         <p className="text-sm text-ink-dim mt-0.5 max-w-3xl">
           Executes the four checks locally against the demo repo and streams real per-check
-          progress. Fixture mode only — no live model calls, no sandbox, no API keys.
+          progress.
         </p>
       </header>
 
