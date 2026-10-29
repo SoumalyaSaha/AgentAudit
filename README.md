@@ -37,8 +37,8 @@ All four must pass for a **Verified** verdict. Any failure produces
 ## Quick start
 
 ```bash
-git clone <this-repo>
-cd agentaudit
+git clone https://github.com/SoumalyaSaha/AgentAudit.git
+cd AgentAudit
 pip install -r requirements.txt
 python3 engine/run_demo.py both
 ```
@@ -130,6 +130,21 @@ python scripts/audit_server.py     # http://127.0.0.1:8765 (127.0.0.1 only)
 
 See [`dashboard/README.md`](dashboard/README.md) for details.
 
+## Pitch and demo scripts
+
+Two timed two-person scripts for presenting AgentAudit live, both wired
+to the real check names (Test Tampering, Baseline Regression, Blind-Spot
+Coverage, Description Match) and the five exact scenario names:
+
+- [`PRESENTATION_215.md`](PRESENTATION_215.md) — **2:15** balanced cut
+  (narrator + driver, driver speaks three times)
+- [`PRESENTATION_215.txt`](PRESENTATION_215.txt) — same script as plain
+  text, for a teleprompter or terminal
+- [`PRESENTATION_3MIN.md`](PRESENTATION_3MIN.md) — the original **3:00** cut
+
+Each includes a contingency section (lines to say if the terminal or
+dashboard stalls) and answers to likely judge questions.
+
 ## Repository layout
 
 ```
@@ -143,8 +158,8 @@ patches/             Scripted agents' "pull requests" as plain unified
 engine/              Core AgentAudit implementation
   local_backend.py   Offline filesystem-snapshot stand-in for Nebius Sandboxes
   sandbox_backend.py Real Nebius Sandboxes ("ConTree") client (live mode,
-                     --backend sandbox; verified against contree-sdk API,
-                     not yet run live)
+                     --backend sandbox; verified live 2026-10-21, see
+                     reference_output/sandbox_run_evidence.txt)
   inference_client.py Nemotron / Token Factory client (fixture + --live mode)
   diff_utils.py      Check A tampering-pattern detection
   fixtures.py        Recorded Nemotron responses replayed in fixture mode
@@ -156,7 +171,8 @@ scripts/
   verify_check_a.py  Asserts every scripted tampering patch FAILs Check A
                      (and the honest patch passes it)
   smoke_sandbox.py   Minimal live-Sandboxes smoke test (needs credentials;
-                     not yet run green -- no Sandboxes access on this account)
+                     script itself not yet run, but Sandboxes access is
+                     confirmed working -- see sandbox_run_evidence.txt)
 reference_output/    Golden expected output + live-mode capture evidence +
                      live Sandboxes run evidence
 dashboard/            Vite + React + Tailwind front end (run history,
@@ -169,6 +185,8 @@ PLANNING.md          Product plan
 TRD.md               Technical architecture
 DEMO_SCRIPT.md        Shot-by-shot recording script
 RECORDING_CHECKLIST.md  Pre-recording verification steps
+PRESENTATION_215.md/.txt  2:15 two-person live pitch script
+PRESENTATION_3MIN.md  3:00 two-person live pitch script
 ```
 
 ## Why the sandbox branching matters here
