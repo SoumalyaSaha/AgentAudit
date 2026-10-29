@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="dashboard/public/wordmark.png" alt="AgentAudit — the trust layer for AI agents" width="360" />
+</p>
+
 # AgentAudit
 
 **The trust layer for AI coding agents.** Every autofix agent can tell
