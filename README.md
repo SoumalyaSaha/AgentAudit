@@ -130,21 +130,6 @@ python scripts/audit_server.py     # http://127.0.0.1:8765 (127.0.0.1 only)
 
 See [`dashboard/README.md`](dashboard/README.md) for details.
 
-## Pitch and demo scripts
-
-Two timed two-person scripts for presenting AgentAudit live, both wired
-to the real check names (Test Tampering, Baseline Regression, Blind-Spot
-Coverage, Description Match) and the five exact scenario names:
-
-- [`PRESENTATION_215.md`](PRESENTATION_215.md) — **2:15** balanced cut
-  (narrator + driver, driver speaks three times)
-- [`PRESENTATION_215.txt`](PRESENTATION_215.txt) — same script as plain
-  text, for a teleprompter or terminal
-- [`PRESENTATION_3MIN.md`](PRESENTATION_3MIN.md) — the original **3:00** cut
-
-Each includes a contingency section (lines to say if the terminal or
-dashboard stalls) and answers to likely judge questions.
-
 ## Repository layout
 
 ```
@@ -185,8 +170,6 @@ PLANNING.md          Product plan
 TRD.md               Technical architecture
 DEMO_SCRIPT.md        Shot-by-shot recording script
 RECORDING_CHECKLIST.md  Pre-recording verification steps
-PRESENTATION_215.md/.txt  2:15 two-person live pitch script
-PRESENTATION_3MIN.md  3:00 two-person live pitch script
 ```
 
 ## Why the sandbox branching matters here
