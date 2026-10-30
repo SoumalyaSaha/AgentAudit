@@ -6,6 +6,9 @@ dashboard/node_modules/
 dashboard/dist/
 dashboard/scripts/.render_smoke.*
 
+# Hosted-instance run log (Render's own history; starts empty per deploy)
+hosted_run_history.json
+
 # Secrets (never commit real keys)
 .env
 .env.*

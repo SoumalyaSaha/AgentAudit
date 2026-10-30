@@ -233,6 +233,13 @@ and the audit runner is a Python process:
   two states visible).
 - **New Audit** — live: it POSTs scenarios straight to the runner and streams
   the per-check events.
+- **The hosted run log starts at zero.** The service writes history to its own
+  file (`AGENTAUDIT_HISTORY_PATH=hosted_run_history.json`), not the committed
+  snapshot — so a new visitor sees *Live runner · 0* and the counter grows as
+  audits execute (resetting on each redeploy; the free-tier disk is
+  ephemeral). The committed 25-run `run_history.json` remains the bundled
+  *Snapshot* fallback when the runner is unreachable, the evidence Agent
+  Health renders, and the data the CI gates verify.
 
 ### Honest limits of a free-tier deployment
 

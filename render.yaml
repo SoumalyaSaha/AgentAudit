@@ -27,6 +27,16 @@ services:
       # GitHub Pages origin — must match the site that serves the dashboard.
       - key: AGENTAUDIT_ALLOWED_ORIGINS
         value: https://soumalyasaha.github.io
+      # The hosted instance keeps its OWN run log, separate from the committed
+      # snapshot: relative to the service root, absent on a fresh deploy, so
+      # _load() starts empty -> visitors see "Live runner · 0" and the counter
+      # grows as audits execute (resetting on every redeploy - free-tier disk
+      # is ephemeral). engine/history.py reads this env var (history_path()).
+      # dashboard/data/run_history.json (25 recorded runs) stays untouched as
+      # the bundled Snapshot fallback, the evidence Agent Health renders, and
+      # the data the CI gates verify.
+      - key: AGENTAUDIT_HISTORY_PATH
+        value: hosted_run_history.json
       # Pasted diffs execute visitor-supplied test code, so the public endpoint
       # accepts only the five built-in scenarios. Delete these two lines to
       # re-enable Paste Diff for visitors (their code would run here).

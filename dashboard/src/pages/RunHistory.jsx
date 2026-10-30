@@ -117,7 +117,7 @@ export default function RunHistory({
         <StatCard
           icon="timer"
           label="Avg Duration"
-          value={fmtDuration(avg)}
+          value={total ? fmtDuration(avg) : '—'}
           sub="Wall clock per run"
         />
       </div>
@@ -233,7 +233,9 @@ export default function RunHistory({
               {runs.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-ink-faint text-sm">
-                    No runs match this filter.
+                    {allRuns.length === 0
+                      ? 'No runs recorded yet — press Run Audit on New Audit to start the log.'
+                      : 'No runs match this filter.'}
                   </td>
                 </tr>
               )}
