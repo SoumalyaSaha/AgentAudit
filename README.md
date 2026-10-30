@@ -255,6 +255,30 @@ and the audit runner is a Python process:
   Local backend and the recorded fixtures only, exactly like the recorded
   demo.
 
+## System design
+
+![AgentAudit system design: the audit engine (run_demo.py orchestrating scenarios, the four checks, verdict aggregation, and run history over the Local or Nebius Sandboxes backends and Nemotron inference) and the dashboard (App.jsx routing to the four pages through useRuns.js and api.js against audit_server.py)](docs/system-design.png)
+
+Two flows, one run history:
+
+- **Left — the audit engine.** An engineer starts an audit; `run_demo.py`
+  picks a scenario (`scenarios.py`), runs the four checks (`checks.py`),
+  combines their outcomes into a verdict (`aggregator.py`), and records the
+  run (`history.py` → `run_history.json`). Checks A–B execute the patch in
+  either Local filesystem snapshots (`local_backend.py`, offline) or real
+  Nebius Sandboxes (`sandbox_backend.py`, live mode); checks C–D go through
+  the Nemotron client (`inference_client.py`), which either replays recorded
+  responses (`fixtures.py`, fixture mode) or calls the live model on Nebius
+  Token Factory (`--live`).
+- **Right — the dashboard.** A dashboard user opens the site;
+  `App.jsx` routes to the four pages, wrapped in the shared layout
+  (`Layout.jsx`). Every page renders through the shared UI components
+  (`ui.jsx`) over data helpers (`data.js`); the run feed and detail pages
+  read runs from the shared `useRuns.js` state, which fetches from the
+  runner API (`api.js` → `audit_server.py`) and falls back to the committed
+  snapshot when the runner is unreachable. Agent Health computes its
+  matrix and failure-mode metrics in `analytics.js`.
+
 ## Repository layout
 
 ```
@@ -308,6 +332,8 @@ agentaudit/
 │   │   ├── logo.png                  # App logo
 │   │   └── wordmark.png              # Header wordmark
 │   └── vite.config.js                # base './' for Pages; dev proxy /api -> 127.0.0.1:8765
+├── docs/
+│   └── system-design.png             # Architecture diagram referenced in this README
 ├── .github/workflows/                # deploy-pages.yml: build dashboard + publish to Pages
 ├── render.yaml                       # Render Blueprint for the Python runner (free tier)
 ├── requirements.txt                  # Python dependencies
