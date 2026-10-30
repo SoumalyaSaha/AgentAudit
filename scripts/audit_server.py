@@ -270,7 +270,13 @@ class Handler(BaseHTTPRequestHandler):
             })
         elif self.path.startswith("/api/runs"):
             runs = history._load(history.history_path())
-            self._json({"runs": runs[-25:], "total": len(runs)})
+            # Serve the FULL log, not a sliding window: the dashboard's Total
+            # card counts the array it receives, so a [-25:] slice made the
+            # counter freeze at 25 once 26+ runs existed -- and a fresh-start
+            # counter that stops counting defeats its own point. The hosted
+            # log resets on every deploy (ephemeral disk), so the payload
+            # stays bounded in practice.
+            self._json({"runs": runs, "total": len(runs)})
         else:
             self._json({"error": "not found"}, 404)
 
