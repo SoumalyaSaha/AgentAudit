@@ -19,7 +19,17 @@ function readApiBase() {
   }
 }
 
-export const API_BASE = readApiBase().replace(/\/+$/, '')
+// The runner exposes everything under /api (/api/runs, /api/run) and callers
+// append /runs or /run to this base. Accept BOTH the service root
+// (https://x.onrender.com, the documented DASHBOARD_API_URL value) and a base
+// that already ends in /api, so a mis-suffixed variable can never turn live
+// mode into a silent 404 -> snapshot fallback.
+function normalizeApiBase(raw) {
+  const trimmed = String(raw || '').replace(/\/+$/, '')
+  return /\/api$/i.test(trimmed) ? trimmed : `${trimmed}/api`
+}
+
+export const API_BASE = normalizeApiBase(readApiBase())
 
 /**
  * Fetch the run list from the backend.
