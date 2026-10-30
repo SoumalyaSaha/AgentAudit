@@ -17,6 +17,8 @@ Safety properties (deliberate):
     diffs execute whatever test code they contain, which is safe on loopback
     (your own machine) but is arbitrary code execution from strangers once the
     port is exposed -- so it stays local unless AGENTAUDIT_ALLOW_CUSTOM=1.
+    Hosted mode also applies a per-IP cooldown, a single-run lock, a body cap,
+    and a per-run timeout (AGENTAUDIT_RUN_TIMEOUT, default 180s).
   - Completed runs are appended to dashboard/data/run_history.json. That file
     lives on the host's disk: on an ephemeral host (Render free tier) runs
     survive until the instance is redeployed or restarted.
@@ -57,10 +59,16 @@ sys.path.insert(0, str(REPO_ROOT / "engine"))
 #                           Defaults to the local Vite dev server only.
 #   AGENTAUDIT_MAX_BODY     Max request body in bytes (default 1 MiB).
 #   AGENTAUDIT_COOLDOWN     Min seconds between runs per client IP (default 5).
+#   AGENTAUDIT_RUN_TIMEOUT  Max seconds one audit may run on a PUBLIC bind
+#                           (default 180), checked at each event boundary --
+#                           it aborts the run at the next check boundary and
+#                           cannot preempt an in-flight pytest. Local loopback
+#                           runs are unbounded.
 #   AGENTAUDIT_ALLOW_CUSTOM Set "1" to accept pasted diffs on a PUBLIC bind.
 #                           Always allowed on loopback.
 MAX_BODY = int(os.environ.get("AGENTAUDIT_MAX_BODY", str(1024 * 1024)))
 COOLDOWN_SECONDS = float(os.environ.get("AGENTAUDIT_COOLDOWN", "5"))
+RUN_TIMEOUT_SECONDS = float(os.environ.get("AGENTAUDIT_RUN_TIMEOUT", "180"))
 ALLOW_PUBLIC = os.environ.get("AGENTAUDIT_ALLOW_PUBLIC", "").lower() in ("1", "true", "yes")
 ALLOW_CUSTOM = os.environ.get("AGENTAUDIT_ALLOW_CUSTOM", "").lower() in ("1", "true", "yes")
 # Set in main() from the address we actually bound, so the handler's policy
@@ -342,6 +350,9 @@ class Handler(BaseHTTPRequestHandler):
             self._cors_headers()
             self.end_headers()
 
+            # Hosted-mode ceiling: a runaway pytest must not pin the free-tier
+            # instance forever. Local loopback runs are unbounded.
+            deadline = (time.monotonic() + RUN_TIMEOUT_SECONDS) if IS_PUBLIC else None
             try:
                 for event in run_audit(scenario, diff_text, ticket_text):
                     chunk = (json.dumps(event) + "\n").encode("utf-8")
@@ -349,6 +360,11 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
                     self.wfile.write(b"\r\n")
                     self.wfile.flush()
+                    if deadline is not None and time.monotonic() > deadline:
+                        raise TimeoutError(
+                            f"audit exceeded {RUN_TIMEOUT_SECONDS:g}s "
+                            "(hosted-mode limit)"
+                        )
             except Exception as exc:  # surface failures to the UI, never crash silently
                 chunk = (json.dumps({"type": "error", "error": f"{type(exc).__name__}: {exc}"}).encode("utf-8") + b"\n")
                 self.wfile.write(f"{len(chunk):X}\r\n".encode("ascii"))
@@ -362,17 +378,30 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    # Line-buffer stdout so the startup banner (host:port, mode, guards) is
+    # visible immediately in a platform's log stream instead of sitting in a
+    # block buffer until exit -- hosted logs are how this gets diagnosed.
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(line_buffering=True)
+    except Exception:
+        pass
+    # Host/port resolution, deliberately explicit:
+    #   AGENTAUDIT_ALLOW_PUBLIC=1  ->  0.0.0.0:$PORT   ($PORT defaults to 8765)
+    #   unset (the default)        ->  127.0.0.1:8765
+    # A hosted platform (Render) injects $PORT and health-probes 0.0.0.0, so a
+    # loopback bind fails its port check even though the process is listening.
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--port",
         type=int,
         default=int(os.environ.get("PORT") or 8765),
-        help="default: $PORT if set (Render/Heroku inject one), else 8765",
+        help="default: $PORT if set (Render injects one), else 8765",
     )
     ap.add_argument(
         "--host",
         default="0.0.0.0" if ALLOW_PUBLIC else "127.0.0.1",
-        help="loopback unless AGENTAUDIT_ALLOW_PUBLIC=1",
+        help="0.0.0.0 when AGENTAUDIT_ALLOW_PUBLIC=1, else 127.0.0.1",
     )
     args = ap.parse_args()
 
@@ -399,11 +428,24 @@ def main() -> None:
     history.write_engine_info()
     srv = QuietServer((args.host, args.port), Handler)
     scope = "loopback only" if loopback else f"PUBLIC, CORS={', '.join(ALLOWED_ORIGINS)}"
-    print(f"AgentAudit local audit runner on http://{args.host}:{args.port}  ({scope})")
+    # Always state the bound host and port plainly -- this is what a deployed
+    # platform's log needs to show 0.0.0.0:<PORT> for its health probe.
+    print(f"AgentAudit audit runner listening on {args.host}:{args.port}  ({scope})")
+    if loopback and os.environ.get("PORT"):
+        # Diagnoses the exact hosted failure ("No open ports detected on
+        # 0.0.0.0, detected open ports on localhost"): $PORT is present, so this
+        # is running under a platform, but the missing opt-in kept us on
+        # loopback.
+        print(
+            "  WARNING: $PORT is set but AGENTAUDIT_ALLOW_PUBLIC is not -- "
+            "binding 127.0.0.1 only. A hosted platform will fail its port "
+            "check; set AGENTAUDIT_ALLOW_PUBLIC=1."
+        )
     if not loopback:
         print(
             "  public mode: per-IP cooldown "
-            f"{COOLDOWN_SECONDS:g}s, one run at a time, body cap {MAX_BODY}B"
+            f"{COOLDOWN_SECONDS:g}s, one run at a time, body cap {MAX_BODY}B, "
+            f"run timeout {RUN_TIMEOUT_SECONDS:g}s"
         )
         print(
             "  paste-diff runs: ENABLED (AGENTAUDIT_ALLOW_CUSTOM=1)"
