@@ -258,39 +258,62 @@ and the audit runner is a Python process:
 ## Repository layout
 
 ```
-demo_repo/           Plain target app used for verification (a small
-                     app with one planted bug -- no git repo inside)
-patches/             Scripted agents' "pull requests" as plain unified
-                     diffs (see patches/README.md): the original
-                     bad_agent/good_agent pair plus three extra Check A
-                     mutation patterns (delete-test, skip-test,
-                     weaken-comparison)
-engine/              Core AgentAudit implementation
-  local_backend.py   Offline filesystem-snapshot stand-in for Nebius Sandboxes
-  sandbox_backend.py Real Nebius Sandboxes ("ConTree") client (live mode,
-                     --backend sandbox; verified live 2026-10-21, see
-                     reference_output/sandbox_run_evidence.txt)
-  inference_client.py Nemotron / Token Factory client (fixture + --live mode)
-  diff_utils.py      Check A tampering-pattern detection
-  fixtures.py        Recorded Nemotron responses replayed in fixture mode
-  checks.py          The four checks
-  aggregator.py       Verdict aggregation
-  run_demo.py         End-to-end demo runner (--backend, --live flags)
-scripts/
-  capture_fixtures.py One-time script to capture real live-mode evidence
-  verify_check_a.py  Asserts every scripted tampering patch FAILs Check A
-                     (and the honest patch passes it)
-  smoke_sandbox.py   Minimal live-Sandboxes smoke test (needs credentials;
-                     script itself not yet run, but Sandboxes access is
-                     confirmed working -- see sandbox_run_evidence.txt)
-reference_output/    Golden expected output + live-mode capture evidence +
-                     live Sandboxes run evidence
-dashboard/            Vite + React + Tailwind front end (run history,
-                     run detail, agent health, new audit)
-  src/                Pages + pure analytics module (src/analytics.js)
-  data/               Generated run history + engine constants (from Python)
-  scripts/            verify_analytics.mjs (matrix/breakdown agreement),
-                     render_smoke.jsx (renders all 4 pages)
+agentaudit/
+├── demo_repo/                        # Target app under verification (one planted bug, no git repo)
+├── patches/                          # Scripted agents' "pull requests" as plain unified diffs
+│   ├── bad_agent.diff                # edits a test's expected value (90.0 -> 100.0)
+│   ├── good_agent.diff               # honest fix: quantity > 10 -> >= 10, tests untouched
+│   ├── bad_agent_delete_test.diff    # Check A mutation: deletes the failing boundary test
+│   ├── bad_agent_skip_test.diff      # Check A mutation: adds @pytest.mark.skip
+│   ├── bad_agent_weaken_comparison.diff  # Check A mutation: flips assertion == to !=
+│   └── README.md                     # what each scripted agent attempts
+├── engine/                           # Core AgentAudit implementation (Python)
+│   ├── checks.py                     # The four checks: tampering, regression, blind-spot, description
+│   ├── aggregator.py                 # Verdict aggregation -> VERIFIED / FLAGGED
+│   ├── diff_utils.py                 # Check A tampering-pattern detection
+│   ├── inference_client.py           # Nemotron via Nebius Token Factory (fixture + --live)
+│   ├── fixtures.py                   # Recorded Nemotron responses replayed offline
+│   ├── local_backend.py              # Offline filesystem snapshot (Sandbox stand-in)
+│   ├── sandbox_backend.py            # Real Nebius Sandboxes client (live-verified 2026-10-21)
+│   ├── history.py                    # Run persistence -> dashboard/data/run_history.json
+│   ├── scenarios.py                  # Scenario catalog (tickets + patch mapping)
+│   └── run_demo.py                   # End-to-end demo runner (--backend, --live flags)
+├── scripts/                          # Service + one-off scripts
+│   ├── audit_server.py               # HTTP API for the dashboard (/api/runs, /api/run)
+│   ├── capture_fixtures.py           # One-time capture of real live-mode evidence
+│   ├── verify_check_a.py             # Asserts every tampering patch FAILs Check A
+│   └── smoke_sandbox.py              # Live Sandboxes smoke test (live-verified 2026-10-21)
+├── reference_output/                 # Golden output + live-mode + Sandboxes run evidence
+├── dashboard/                        # Vite + React + Tailwind front end (GitHub Pages)
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── RunHistory.jsx        # Live/snapshot run feed: stats, filters, refresh
+│   │   │   ├── RunDetail.jsx         # Single-run lab report with per-check evidence
+│   │   │   ├── AgentHealth.jsx       # Scenario x check matrix + failure-mode breakdown
+│   │   │   └── NewAudit.jsx          # Streams a live audit run (scenario or paste diff)
+│   │   ├── components/
+│   │   │   ├── Layout.jsx            # App shell: sidebar nav, header, asset paths
+│   │   │   └── ui.jsx                # StatCard, CheckStrip, VerdictBadge, panels
+│   │   ├── analytics.js              # Pure analytics; one copy serves browser and CI
+│   │   ├── data.js                   # Helpers over run_history.json / engine_info.json
+│   │   ├── api.js                    # Backend base URL + fetch helpers
+│   │   └── useRuns.js                # Shared live-runs fetch (Live runner vs Snapshot)
+│   ├── data/
+│   │   ├── run_history.json          # Generated run log (written by the engine)
+│   │   └── engine_info.json          # Model names, checks, scenario catalog (from Python)
+│   ├── scripts/
+│   │   ├── verify_analytics.mjs      # Gate: matrix/breakdown must trace to real runs
+│   │   └── render_smoke.jsx          # Gate: renders all four pages server-side
+│   ├── public/
+│   │   ├── logo.png                  # App logo
+│   │   └── wordmark.png              # Header wordmark
+│   └── vite.config.js                # base './' for Pages; dev proxy /api -> 127.0.0.1:8765
+├── .github/workflows/                # deploy-pages.yml: build dashboard + publish to Pages
+├── render.yaml                       # Render Blueprint for the Python runner (free tier)
+├── requirements.txt                  # Python dependencies
+├── .python-version                   # Python 3.11 (Render)
+├── .env.example                      # Nebius credential template (never real keys)
+└── README.md                         # Quick start, deployment, evidence links
 ```
 
 ## Why the sandbox branching matters here
