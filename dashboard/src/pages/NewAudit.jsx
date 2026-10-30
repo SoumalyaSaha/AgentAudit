@@ -4,7 +4,7 @@ import { CheckStrip, VerdictBadge } from '../components/ui'
 import { SCENARIOS, fmtDuration } from '../data'
 import { API_BASE, describeApiError } from '../api'
 
-export default function NewAudit({ setPage, openRun }) {
+export default function NewAudit({ setPage, openRun, onRunRecorded }) {
   const [mode, setMode] = React.useState('scenario')
   const [scenario, setScenario] = React.useState('bad-agent-patch')
   const [diff, setDiff] = React.useState('')
@@ -47,7 +47,13 @@ export default function NewAudit({ setPage, openRun }) {
           if (!line.trim()) continue
           const evt = JSON.parse(line)
           setEvents((e) => [...e, evt])
-          if (evt.type === 'result') setResult(evt)
+          if (evt.type === 'result') {
+            setResult(evt)
+            // The runner appends the record before streaming this event, so
+            // ask App to re-fetch: Run History and the Run Detail default
+            // then include the run that just finished.
+            if (evt.run) onRunRecorded?.()
+          }
           if (evt.type === 'error') setError(evt.error)
         }
       }

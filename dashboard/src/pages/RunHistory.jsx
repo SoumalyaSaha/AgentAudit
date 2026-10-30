@@ -2,43 +2,24 @@ import React from 'react'
 import { Icon } from '../components/Layout'
 import { CheckStrip, StatCard, VerdictBadge } from '../components/ui'
 import { RUNS, SCENARIOS, fmtDuration, fmtTimestamp, modeLabel } from '../data'
-import { getRuns, API_BASE } from '../api'
+import { API_BASE } from '../api'
 
-export default function RunHistory({ setPage, openRun }) {
+// Runs/source/loading/refresh come from App's shared useRuns() hook so this
+// table, the Run Detail default and scenario jumps all read ONE list (see
+// useRuns.js for why). Defaults keep the page renderable standalone — the
+// Node render smoke test mounts it with no props and gets the bundled
+// snapshot behavior.
+export default function RunHistory({
+  setPage,
+  openRun,
+  allRuns = RUNS,
+  source = 'bundled',
+  loading = false,
+  refresh = () => {},
+}) {
   const [tab, setTab] = React.useState('all')
   const [query, setQuery] = React.useState('')
   const [sort, setSort] = React.useState('newest')
-
-  // Live runs come from the Python runner; if it can't be reached we keep the
-  // bundled run_history.json snapshot so the page still shows real data rather
-  // than an empty table. Every figure below is computed from `allRuns`.
-  const [allRuns, setAllRuns] = React.useState(RUNS)
-  const [source, setSource] = React.useState('bundled') // 'live' | 'bundled'
-  const [loading, setLoading] = React.useState(true)
-  const [refreshKey, setRefreshKey] = React.useState(0)
-
-  React.useEffect(() => {
-    const ac = new AbortController()
-    let cancelled = false
-    setLoading(true)
-    getRuns({ signal: ac.signal })
-      .then((list) => {
-        if (cancelled) return
-        setAllRuns(list)
-        setSource('live')
-      })
-      .catch((err) => {
-        if (cancelled || err?.name === 'AbortError') return
-        setSource('bundled')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-      ac.abort()
-    }
-  }, [refreshKey])
 
   const runs = React.useMemo(() => {
     let list = [...allRuns]
@@ -97,7 +78,7 @@ export default function RunHistory({ setPage, openRun }) {
             {loading ? 'Connecting…' : source === 'live' ? 'Live runner' : 'Snapshot'}
           </span>
           <button
-            onClick={() => setRefreshKey((k) => k + 1)}
+            onClick={refresh}
             disabled={loading}
             title="Re-fetch runs from the audit runner"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-edge bg-[rgba(255,255,255,0.55)] text-xs text-ink-dim hover:text-ink disabled:opacity-50 transition-colors focus-ring"
