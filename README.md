@@ -149,6 +149,24 @@ A captured live transcript is at
 [`reference_output/live_capture_evidence.txt`](reference_output/live_capture_evidence.txt)
 (generated once ahead of the demo recording).
 
+## How we used NVIDIA Nemotron and Nebius
+
+- **NVIDIA Nemotron (via Nebius Token Factory):** Check 3 (blind-spot
+  tests) and Check 4 (description-to-diff match) call Nemotron 3 Super
+  through Token Factory's OpenAI-compatible endpoint. Model IDs are the
+  constants in `engine/inference_client.py`.
+- **Nebius Token Factory:** it is our inference layer, so there is no
+  GPU infrastructure of our own to run. Real calls are captured in
+  `reference_output/live_capture_evidence.txt`.
+- **Nebius Token Factory Sandboxes (contree-sdk):** every check runs in
+  its own fork of one shared baseline checkpoint, via
+  `engine/sandbox_backend.py`. A full run on real Sandboxes is captured
+  in `reference_output/sandbox_run_evidence.txt`.
+- **What runs where:** the recorded demo uses the local backend and
+  recorded Nemotron responses for speed and repeatability. Live Nebius
+  Sandboxes and live Nemotron are available with `--backend sandbox`
+  and `--live`.
+
 ## Dashboard (Vite + React + Tailwind)
 
 A local front end for the recorded runs — Run History, Run Detail,
